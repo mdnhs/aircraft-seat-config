@@ -48,7 +48,7 @@ interface SeatCellProps {
   id: string;
   row: number;
   col: string;
-  size: "lg" | "md" | "sm";
+  size: number;
   equipment: string | undefined;
   selected: boolean;
 }
@@ -61,16 +61,20 @@ const SeatCell = ({
   equipment,
   selected,
 }: SeatCellProps) => {
-  const s = SEAT_SIZES[size];
-
+  const borderRadius = Math.max(4, Math.floor(size * 0.18));
   return (
-    <div className="rounded-[7px] transition-transform group">
+    <div className="transition-transform group" style={{ borderRadius: `${borderRadius}px` }}>
       <Seat
         id={id}
         row={row}
         col={col}
         equipment={equipment}
-        className={s.seat}
+        style={{ 
+          width: `${size}px`, 
+          height: `${size}px`,
+          borderRadius: `${borderRadius}px`
+        }}
+        className="border-2"
         selected={selected}
       />
     </div>
@@ -104,6 +108,24 @@ const CabinSection = ({
   const groups = cabin.seatFormat.split("-").map(Number);
   const totalCols = groups.reduce((a, b) => a + b, 0);
 
+  // Dynamic Seat Size and Gaps based on fixed 400px height
+  const containerPadding = 48; // p-6 top/bottom
+  const labelHeight = 20; // Row labels height
+  const numSpacers = groups.length - 1;
+
+  // We want to solve for seatSize given 400px height
+  // Total height = padding + labelHeight + totalCols*seatSize + numSpacers*spacerHeight + (totalCols + numSpacers)*gap
+  // Let gap = seatSize * 0.2
+  // Let spacerHeight = seatSize * 0.5
+  
+  const availableHeight = 400 - containerPadding - labelHeight;
+  const multiplier = (1.2 * totalCols + 0.7 * numSpacers);
+  const calculatedSeatSize = Math.floor(availableHeight / multiplier);
+  
+  const seatSize = Math.min(40, Math.max(20, calculatedSeatSize));
+  const verticalGap = Math.max(4, Math.floor(seatSize * 0.2));
+  const spacerHeight = Math.max(8, Math.floor(seatSize * 0.5));
+
   const allLabels =
     cabin.customLabels && cabin.customLabels.length === totalCols
       ? cabin.customLabels
@@ -127,27 +149,26 @@ const CabinSection = ({
   return (
     <ContextMenu>
       <ContextMenuTrigger
-        render={
-          <div className="flex items-stretch gap-3 group/cabin" />
-        }
+        render={<div className="flex items-stretch gap-3 group/cabin h-[400px]" />}
       >
-        <div className="w-8 flex items-center justify-center border-l-2 border-border/30 rounded-l-lg bg-muted/10 transition-colors group-hover/cabin:bg-muted/20">
+        <div className="w-8 flex items-center justify-center border-l-2 border-border/30 rounded-l-xl bg-muted/10 transition-colors group-hover/cabin:bg-muted/20">
           <span
-            className="text-[10px] font-black tracking-[0.4em] uppercase text-muted-foreground/20 select-none whitespace-nowrap py-4"
+            className="text-[10px] font-black tracking-[0.4em] uppercase text-muted-foreground/30 select-none whitespace-nowrap"
             style={{ writingMode: "vertical-lr", transform: "rotate(180deg)" }}
           >
             {cabin.label}
           </span>
         </div>
 
-        <div className="border border-border/60 rounded-2xl p-5 bg-background shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)] transition-shadow hover:shadow-[0_8px_30px_-4px_rgba(0,0,0,0.08)]">
-          <div className="flex flex-col gap-3">
-            <div className="flex items-center gap-2 mb-1">
+        <div className="border border-border/60 rounded-3xl p-6 bg-background shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)] transition-shadow hover:shadow-[0_8px_30px_-4px_rgba(0,0,0,0.08)] flex flex-col justify-center">
+          <div className="flex flex-col" style={{ gap: `${verticalGap}px` }}>
+            <div className="flex items-center gap-2" style={{ marginBottom: `${verticalGap}px` }}>
               <div className="w-8 flex-shrink-0" />
               {rows.map((row) => (
                 <span
                   key={row}
-                  className="text-[10px] font-black text-muted-foreground/20 w-10 text-center select-none flex-shrink-0"
+                  style={{ width: `${seatSize + 8}px` }}
+                  className="text-[10px] font-bold text-muted-foreground/40 text-center select-none flex-shrink-0"
                 >
                   {String(row).padStart(2, "0")}
                 </span>
@@ -158,7 +179,7 @@ const CabinSection = ({
               <React.Fragment key={groupIdx}>
                 {group.map((col) => (
                   <div key={col} className="flex items-center gap-2">
-                    <span className="text-[11px] font-black text-muted-foreground/20 w-8 text-center select-none flex-shrink-0">
+                    <span className="text-[11px] font-bold text-muted-foreground/40 w-8 text-center select-none flex-shrink-0">
                       {col}
                     </span>
                     {rows.map((row) => {
@@ -166,13 +187,14 @@ const CabinSection = ({
                       return (
                         <div
                           key={id}
-                          className="w-10 flex justify-center flex-shrink-0"
+                          style={{ width: `${seatSize + 8}px` }}
+                          className="flex justify-center flex-shrink-0"
                         >
                           <SeatCell
                             id={id}
                             row={row}
                             col={col}
-                            size={cabin.seatSize}
+                            size={seatSize}
                             equipment={seatConfig[id]}
                             selected={selectedSeats.includes(id)}
                           />
@@ -182,7 +204,7 @@ const CabinSection = ({
                   </div>
                 ))}
                 {groupIdx < colGroups.length - 1 && (
-                  <div className="h-6 flex items-center px-8">
+                  <div className="flex items-center px-8" style={{ height: `${spacerHeight}px` }}>
                     <div className="w-full h-px bg-muted/30 border-t border-dashed border-muted/50" />
                   </div>
                 )}
@@ -274,10 +296,8 @@ export const AircraftSeatMap = ({
     selectionRef.current = new Selection({
       class: "selection-area",
       selectables: [".seat-selectable"],
-      // ✅ Boundaries limit where the selection can start and what can be selected.
-      boundaries: [".selection-boundary"],
-      // ✅ Omitting `container` appends the marquee to the body, which works
-      //    best with `position: fixed` to avoid drift or clipping issues.
+      boundaries: [containerRef.current],
+      container: containerRef.current,
     });
 
     selectionRef.current.on("beforestart", ({ event }) => {
@@ -286,7 +306,6 @@ export const AircraftSeatMap = ({
         target?.closest('[draggable="true"]') ||
         target?.closest("button") ||
         target?.closest('[role="dialog"]') ||
-        // Also block Radix dropdowns / popovers that may float over the map
         target?.closest("[data-radix-popper-content-wrapper]")
       ) {
         return false;
@@ -294,58 +313,27 @@ export const AircraftSeatMap = ({
       return true;
     });
 
-    // ✅ Drive all state from `move` so every incremental change is reflected
-    //    immediately (smooth rubber-band highlight as you drag).
-    selectionRef.current.on(
-      "move",
-      ({
-        store: {
-          changed: { added, removed },
-        },
-      }) => {
-        const addedKeys = added
-          .map((el) => el.getAttribute("data-key"))
-          .filter((k): k is string => k !== null);
-        const removedKeys = removed
-          .map((el) => el.getAttribute("data-key"))
-          .filter((k): k is string => k !== null);
-
-        if (addedKeys.length === 0 && removedKeys.length === 0) return;
-
-        const next = [
-          ...selectedSeatsRef.current.filter((id) => !removedKeys.includes(id)),
-          ...addedKeys,
-        ];
-        onChangeRef.current([...new Set(next)]);
-      },
-    );
-
-    // ✅ `stop` syncs the final authoritative set from viselect.
-    //    This also handles a plain click (no drag = no `move` events fired),
-    //    so clicking a single seat correctly selects / deselects it.
-    //    We skip the update when the sets are identical to avoid a redundant render.
-    selectionRef.current.on("stop", ({ store: { selected } }) => {
-      const selectedKeys = selected
+    // ✅ Use the authoritative `selected` set from viselect.
+    //    This ensures that previous selections are replaced during a new drag
+    //    unless modifier keys are used, fixing the "double highlight" bug.
+    selectionRef.current.on("move", ({ store: { selected } }) => {
+      const keys = selected
         .map((el) => el.getAttribute("data-key"))
         .filter((k): k is string => k !== null);
+      onChangeRef.current(keys);
+    });
 
-      const prev = selectedSeatsRef.current;
-      const same =
-        selectedKeys.length === prev.length &&
-        selectedKeys.every((k) => prev.includes(k));
-
-      if (!same) {
-        onChangeRef.current([...new Set(selectedKeys)]);
-      }
+    selectionRef.current.on("stop", ({ store: { selected } }) => {
+      const keys = selected
+        .map((el) => el.getAttribute("data-key"))
+        .filter((k): k is string => k !== null);
+      onChangeRef.current(keys);
     });
 
     return () => {
       selectionRef.current?.destroy();
       selectionRef.current = null;
     };
-    // ✅ Empty dep array — Selection is created once and uses refs for all
-    //    live values. Adding dependencies here would destroy the instance
-    //    mid-drag every time cabins or selectedSeats change.
   }, []);
 
   useEffect(() => {
@@ -412,7 +400,7 @@ export const AircraftSeatMap = ({
       >
         <Card className="min-w-max bg-background border-border/50 shadow-lg rounded-[2.5rem] overflow-hidden">
           <CardContent className="p-10 pb-12">
-            <div className="flex items-start gap-8">
+            <div className="flex items-center gap-8">
               {cabins.map((cabin) => (
                 <CabinSection
                   key={cabin.id}
@@ -425,11 +413,11 @@ export const AircraftSeatMap = ({
                 />
               ))}
 
-              <div className="flex items-center pt-10 pr-4">
+              <div className="flex items-center">
                 <AddCabinDialog
                   onAddCabin={onAddCabin}
                   trigger={
-                    <div className="h-48 w-14 flex items-center justify-center border-2 border-dashed border-border rounded-2xl text-muted-foreground hover:border-blue-400 hover:text-blue-500 transition-all hover:bg-blue-50/50 cursor-pointer group shadow-sm hover:shadow-md">
+                    <div className="h-10 w-10 flex items-center justify-center border-2 border-border rounded-xl text-muted-foreground hover:border-blue-400 hover:text-blue-500 transition-all hover:bg-blue-50/50 cursor-pointer group shadow-sm hover:shadow-md">
                       <Plus className="w-6 h-6 group-hover:scale-110 transition-transform" />
                     </div>
                   }

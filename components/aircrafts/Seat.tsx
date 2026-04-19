@@ -7,6 +7,7 @@ export const Seat = ({
   id,
   equipment,
   className,
+  style,
   selected,
 }: {
   id: string;
@@ -14,6 +15,7 @@ export const Seat = ({
   col: string;
   equipment?: string;
   className?: string;
+  style?: React.CSSProperties;
   selected?: boolean;
 }) => {
   const { setNodeRef, isOver } = useDroppable({ id });
@@ -27,11 +29,12 @@ export const Seat = ({
     <div
       ref={setNodeRef}
       data-key={id}
+      style={style}
       className={`border-2 rounded-lg flex items-center justify-center transition-all flex-shrink-0 relative seat-selectable
         ${isOver ? "bg-accent border-primary scale-110 shadow-md z-20" : "bg-background border-border"}
         ${selected ? "ring-2 ring-blue-500 ring-offset-2 border-blue-500 bg-blue-50" : ""}
         ${equipment ? "bg-primary/5 border-primary/30" : ""}
-        ${className || "w-10 h-10"}
+        ${className || ""}
       `}
     >
       {equipment ? (
