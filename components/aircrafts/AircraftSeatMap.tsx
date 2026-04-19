@@ -398,9 +398,9 @@ export const AircraftSeatMap = ({
         ref={containerRef}
         className="flex-1 overflow-auto bg-muted/5 p-12 relative scrollbar-thin scrollbar-thumb-muted-foreground/10 selection-boundary select-none"
       >
-        <Card className="min-w-max bg-background border-border/50 shadow-lg rounded-[2.5rem] overflow-hidden">
+        <Card className="w-fit max-w-full bg-background border-border/50 shadow-lg rounded-[2.5rem] overflow-hidden">
           <CardContent className="p-10 pb-12">
-            <div className="flex items-center gap-8">
+            <div className="flex items-center gap-8 overflow-x-auto pb-4 scrollbar-thin scrollbar-thumb-muted-foreground/10">
               {cabins.map((cabin) => (
                 <CabinSection
                   key={cabin.id}
@@ -426,10 +426,6 @@ export const AircraftSeatMap = ({
             </div>
           </CardContent>
         </Card>
-
-        <div className="fixed bottom-10 left-1/2 -translate-x-1/2 bg-slate-900/90 text-white text-[10px] font-bold px-6 py-2.5 rounded-full uppercase tracking-[0.2em] shadow-2xl pointer-events-none z-50 backdrop-blur-sm border border-white/10">
-          Drag tools from sidebar or drag on map to select multiple seats
-        </div>
       </div>
 
       {/* ── Edit Column Labels Dialog ───────────────────────────────────── */}
