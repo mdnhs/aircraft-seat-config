@@ -63,16 +63,19 @@ const SeatCell = ({
 }: SeatCellProps) => {
   const borderRadius = Math.max(4, Math.floor(size * 0.18));
   return (
-    <div className="transition-transform group" style={{ borderRadius: `${borderRadius}px` }}>
+    <div
+      className="transition-transform group"
+      style={{ borderRadius: `${borderRadius}px` }}
+    >
       <Seat
         id={id}
         row={row}
         col={col}
         equipment={equipment}
-        style={{ 
-          width: `${size}px`, 
+        style={{
+          width: `${size}px`,
           height: `${size}px`,
-          borderRadius: `${borderRadius}px`
+          borderRadius: `${borderRadius}px`,
         }}
         className="border-2"
         selected={selected}
@@ -117,11 +120,11 @@ const CabinSection = ({
   // Total height = padding + labelHeight + totalCols*seatSize + numSpacers*spacerHeight + (totalCols + numSpacers)*gap
   // Let gap = seatSize * 0.2
   // Let spacerHeight = seatSize * 0.5
-  
+
   const availableHeight = 400 - containerPadding - labelHeight;
-  const multiplier = (1.2 * totalCols + 0.7 * numSpacers);
+  const multiplier = 1.2 * totalCols + 0.7 * numSpacers;
   const calculatedSeatSize = Math.floor(availableHeight / multiplier);
-  
+
   const seatSize = Math.min(40, Math.max(20, calculatedSeatSize));
   const verticalGap = Math.max(4, Math.floor(seatSize * 0.2));
   const spacerHeight = Math.max(8, Math.floor(seatSize * 0.5));
@@ -149,7 +152,9 @@ const CabinSection = ({
   return (
     <ContextMenu>
       <ContextMenuTrigger
-        render={<div className="flex items-stretch gap-3 group/cabin h-[400px]" />}
+        render={
+          <div className="flex items-stretch gap-3 group/cabin h-[400px]" />
+        }
       >
         <div className="w-8 flex items-center justify-center border-l-2 border-border/30 rounded-l-xl bg-muted/10 transition-colors group-hover/cabin:bg-muted/20">
           <span
@@ -162,7 +167,10 @@ const CabinSection = ({
 
         <div className="border border-border/60 rounded-3xl p-6 bg-background shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)] transition-shadow hover:shadow-[0_8px_30px_-4px_rgba(0,0,0,0.08)] flex flex-col justify-center">
           <div className="flex flex-col" style={{ gap: `${verticalGap}px` }}>
-            <div className="flex items-center gap-2" style={{ marginBottom: `${verticalGap}px` }}>
+            <div
+              className="flex items-center gap-2"
+              style={{ marginBottom: `${verticalGap}px` }}
+            >
               <div className="w-8 flex-shrink-0" />
               {rows.map((row) => (
                 <span
@@ -204,7 +212,10 @@ const CabinSection = ({
                   </div>
                 ))}
                 {groupIdx < colGroups.length - 1 && (
-                  <div className="flex items-center px-8" style={{ height: `${spacerHeight}px` }}>
+                  <div
+                    className="flex items-center px-8"
+                    style={{ height: `${spacerHeight}px` }}
+                  >
                     <div className="w-full h-px bg-muted/30 border-t border-dashed border-muted/50" />
                   </div>
                 )}
@@ -399,8 +410,8 @@ export const AircraftSeatMap = ({
         className="flex-1 overflow-auto bg-muted/5 p-12 relative scrollbar-thin scrollbar-thumb-muted-foreground/10 selection-boundary select-none"
       >
         <Card className="w-fit max-w-full bg-background border-border/50 shadow-lg rounded-[2.5rem] overflow-hidden">
-          <CardContent className="p-10 pb-12">
-            <div className="flex items-center gap-8 overflow-x-auto pb-4 scrollbar-thin scrollbar-thumb-muted-foreground/10">
+          <CardContent className="p-3">
+            <div className="flex items-center gap-8 overflow-x-auto scrollbar-thin scrollbar-thumb-muted-foreground/10">
               {cabins.map((cabin) => (
                 <CabinSection
                   key={cabin.id}
