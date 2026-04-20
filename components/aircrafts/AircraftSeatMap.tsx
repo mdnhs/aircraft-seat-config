@@ -390,7 +390,7 @@ export const AircraftSeatMap = ({
   };
 
   return (
-    <div className="bg-background border-border flex min-h-[600px] overflow-hidden rounded-b-xl border shadow-sm">
+    <div className="bg-background border-border flex min-h-150 overflow-hidden rounded-b-xl border shadow-sm">
       <div className="border-border bg-muted/30 z-10 flex w-20 flex-col gap-2 border-r p-3 shadow-[4px_0_10px_-4px_rgba(0,0,0,0.05)]">
         {TOOLS.map((tool) => (
           <DraggableTool key={tool.id} tool={tool} />
@@ -402,7 +402,9 @@ export const AircraftSeatMap = ({
         className="bg-muted/5 scrollbar-thin scrollbar-thumb-muted-foreground/10 selection-boundary relative flex-1 overflow-auto p-12 select-none"
       >
         <Card className="bg-background border-border/50 w-fit max-w-full overflow-hidden rounded-[2.5rem] shadow-lg">
-          <CardContent className="flex min-h-106 min-w-150 items-center justify-center p-3">
+          <CardContent
+            className={`min-h-106 min-w-150 ${cabins.length > 0 || "flex items-center justify-center"} p-3`}
+          >
             <div className="scrollbar-thin scrollbar-thumb-muted-foreground/10 flex items-center gap-8 overflow-x-auto">
               {cabins.map((cabin) => (
                 <CabinSection
