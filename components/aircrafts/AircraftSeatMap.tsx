@@ -36,17 +36,19 @@ import { CabinConfig, SeatConfig } from "./types";
 import Image from "next/image";
 import { z } from "zod";
 
-const cabinSchema = z.object({
-  cabinType: z.string().min(1, "Cabin type is required"),
-  rowFrom: z.number().min(1, "Row From must be at least 1"),
-  rowTo: z.number().min(1, "Row To must be at least 1"),
-  seatFormat: z
-    .string()
-    .regex(/^\d+(-\d+)*$/, "Invalid format (e.g., 3-3, 2-4-2)"),
-}).refine((data) => data.rowTo >= data.rowFrom, {
-  message: "Row To must be greater than or equal to Row From",
-  path: ["rowTo"],
-});
+const cabinSchema = z
+  .object({
+    cabinType: z.string().min(1, "Cabin type is required"),
+    rowFrom: z.number().min(1, "Row From must be at least 1"),
+    rowTo: z.number().min(1, "Row To must be at least 1"),
+    seatFormat: z
+      .string()
+      .regex(/^\d+(-\d+)*$/, "Invalid format (e.g., 3-3, 2-4-2)"),
+  })
+  .refine((data) => data.rowTo >= data.rowFrom, {
+    message: "Row To must be greater than or equal to Row From",
+    path: ["rowTo"],
+  });
 
 // ─── SeatCell ─────────────────────────────────────────────────────────────────
 
@@ -57,6 +59,8 @@ interface SeatCellProps {
   size: number;
   equipment: string | undefined;
   selected: boolean;
+  onDeleteSeat: (id: string) => void;
+  style?: React.CSSProperties;
 }
 
 const SeatCell = ({
@@ -66,27 +70,60 @@ const SeatCell = ({
   size,
   equipment,
   selected,
+  onDeleteSeat,
+  style,
 }: SeatCellProps) => {
   const borderRadius = Math.max(4, Math.floor(size * 0.18));
+  const isRemoved = equipment === "removed";
+  const isLav = equipment === "lav";
+
   return (
-    <div
-      className="group transition-transform"
-      style={{ borderRadius: `${borderRadius}px` }}
-    >
-      <Seat
-        id={id}
-        row={row}
-        col={col}
-        equipment={equipment}
-        style={{
-          width: `${size}px`,
-          height: `${size}px`,
-          borderRadius: `${borderRadius}px`,
-        }}
-        className="border-2"
-        selected={selected}
-      />
-    </div>
+    <ContextMenu>
+      <ContextMenuTrigger 
+        render={
+          <div
+            className="group transition-transform"
+            style={{ 
+              borderRadius: `${borderRadius}px`,
+              width: `${size}px`,
+              height: `${size}px`,
+              ...(style?.position === "absolute" ? { 
+                position: "absolute", 
+                top: style.top, 
+                left: style.left, 
+                height: style.height, 
+                width: style.width || `${size}px`,
+                zIndex: style.zIndex 
+              } : {})
+            }}
+          />
+        }
+      >
+        <Seat
+          id={id}
+          row={row}
+          col={col}
+          equipment={equipment}
+          style={{
+            width: "100%",
+            height: "100%",
+            borderRadius: `${borderRadius}px`,
+          }}
+          className={`border-2 ${isLav ? "flex items-center justify-center" : ""}`}
+          selected={selected}
+        />
+      </ContextMenuTrigger>
+      <ContextMenuContent>
+        <ContextMenuItem
+          disabled={isRemoved}
+          onClick={() => onDeleteSeat(id)}
+          className="text-destructive focus:text-destructive gap-2"
+        >
+          <Trash2 className="h-4 w-4" />
+          Delete Seat
+        </ContextMenuItem>
+      </ContextMenuContent>
+    </ContextMenu>
   );
 };
 
@@ -99,6 +136,7 @@ interface CabinSectionProps {
   onDelete: (id: string) => void;
   onEditLabels: (id: string) => void;
   onEditCabin: (cabin: CabinConfig) => void;
+  onDeleteSeat: (id: string) => void;
 }
 
 const CabinSection = ({
@@ -108,6 +146,7 @@ const CabinSection = ({
   onDelete,
   onEditLabels,
   onEditCabin,
+  onDeleteSeat,
 }: CabinSectionProps) => {
   const rows = Array.from(
     { length: cabin.endRow - cabin.startRow + 1 },
@@ -117,15 +156,9 @@ const CabinSection = ({
   const groups = cabin.seatFormat.split("-").map(Number);
   const totalCols = groups.reduce((a, b) => a + b, 0);
 
-  // Dynamic Seat Size and Gaps based on fixed 400px height
-  const containerPadding = 48; // p-6 top/bottom
-  const labelHeight = 20; // Row labels height
+  const containerPadding = 48;
+  const labelHeight = 20;
   const numSpacers = groups.length - 1;
-
-  // We want to solve for seatSize given 400px height
-  // Total height = padding + labelHeight + totalCols*seatSize + numSpacers*spacerHeight + (totalCols + numSpacers)*gap
-  // Let gap = seatSize * 0.2
-  // Let spacerHeight = seatSize * 0.5
 
   const availableHeight = 400 - containerPadding - labelHeight;
   const multiplier = 1.2 * totalCols + 0.7 * numSpacers;
@@ -191,26 +224,55 @@ const CabinSection = ({
 
             {colGroups.map((group, groupIdx) => (
               <React.Fragment key={groupIdx}>
-                {group.map((col) => (
-                  <div key={col} className="flex items-center gap-2">
+                {group.map((col, idx) => (
+                  <div key={col} className="flex items-center gap-2" style={{ height: `${seatSize}px` }}>
                     <span className="text-muted-foreground/40 w-8 flex-shrink-0 text-center text-[11px] font-bold select-none">
                       {col}
                     </span>
                     {rows.map((row) => {
                       const id = `${row}-${col}`;
+                      const equipment = seatConfig[id];
+
+                      if (equipment === "lav-occupied") {
+                        return (
+                          <div
+                            key={id}
+                            style={{ width: `${seatSize + 8}px`, height: `${seatSize}px` }}
+                            className="flex flex-shrink-0 justify-center"
+                          />
+                        );
+                      }
+
+                      const isLav = equipment === "lav";
+                      const isLastInGroup = idx === group.length - 1;
+                      const hasAisleBelow = isLastInGroup && groupIdx < colGroups.length - 1;
+                      
+                      const lavHeight = isLav 
+                        ? (seatSize * 2 + verticalGap + (hasAisleBelow ? spacerHeight + verticalGap : 0))
+                        : seatSize;
+
                       return (
                         <div
                           key={id}
-                          style={{ width: `${seatSize + 8}px` }}
-                          className="flex flex-shrink-0 justify-center"
+                          style={{ width: `${seatSize + 8}px`, height: `${seatSize}px` }}
+                          className="flex flex-shrink-0 justify-center relative items-center"
                         >
                           <SeatCell
                             id={id}
                             row={row}
                             col={col}
                             size={seatSize}
-                            equipment={seatConfig[id]}
+                            equipment={equipment}
                             selected={selectedSeats.includes(id)}
+                            onDeleteSeat={onDeleteSeat}
+                            style={isLav ? {
+                              height: `${lavHeight}px`,
+                              width: `${seatSize}px`,
+                              zIndex: 10,
+                              position: "absolute",
+                              top: 0,
+                              left: "4px"
+                            } : undefined}
                           />
                         </div>
                       );
@@ -263,6 +325,7 @@ interface AircraftSeatMapProps {
   onAddCabin: (cabin: CabinConfig) => void;
   onDeleteCabin: (id: string) => void;
   onUpdateCabin: (id: string, updates: Partial<CabinConfig>) => void;
+  onDeleteSeat: (id: string) => void;
   selectedSeats: string[];
   onSelectedSeatsChange: (seats: string[]) => void;
 }
@@ -273,6 +336,7 @@ export const AircraftSeatMap = ({
   onAddCabin,
   onDeleteCabin,
   onUpdateCabin,
+  onDeleteSeat,
   selectedSeats,
   onSelectedSeatsChange,
 }: AircraftSeatMapProps) => {
@@ -291,15 +355,11 @@ export const AircraftSeatMap = ({
   const containerRef = useRef<HTMLDivElement>(null);
   const selectionRef = useRef<SelectionArea | null>(null);
 
-  // ✅ Stable ref for the callback — avoids putting it in the effect dep array,
-  //    which would destroy and recreate the Selection instance on every render.
   const onChangeRef = useRef(onSelectedSeatsChange);
   useEffect(() => {
     onChangeRef.current = onSelectedSeatsChange;
   }, [onSelectedSeatsChange]);
 
-  // ✅ Stable ref for current selection — lets move/stop callbacks read the
-  //    latest value without ever closing over stale state.
   const selectedSeatsRef = useRef<string[]>(selectedSeats);
   useEffect(() => {
     selectedSeatsRef.current = selectedSeats;
@@ -308,7 +368,6 @@ export const AircraftSeatMap = ({
   useEffect(() => {
     if (!containerRef.current) return;
 
-    // Destroy any leftover instance (StrictMode double-invoke safety)
     selectionRef.current?.destroy();
 
     selectionRef.current = new SelectionArea({
@@ -331,9 +390,6 @@ export const AircraftSeatMap = ({
       return true;
     });
 
-    // ✅ Use the authoritative `selected` set from viselect.
-    //    This ensures that previous selections are replaced during a new drag
-    //    unless modifier keys are used, fixing the "double highlight" bug.
     selectionRef.current.on("move", ({ store: { selected } }) => {
       const keys = selected
         .map((el) => el.getAttribute("data-key"))
@@ -430,10 +486,7 @@ export const AircraftSeatMap = ({
         ))}
       </div>
 
-      <div
-        ref={containerRef}
-        className="bg-muted/5 scrollbar-thin scrollbar-thumb-muted-foreground/10 selection-boundary flex flex-1 overflow-auto p-12 select-none"
-      >
+      <div className="bg-muted/5 scrollbar-thin scrollbar-thumb-muted-foreground/10 selection-boundary flex flex-1 overflow-auto p-12 select-none">
         <div className="flex h-114 items-stretch">
           <div
             className="relative shrink-0"
@@ -451,7 +504,10 @@ export const AircraftSeatMap = ({
             <CardContent
               className={`min-h-106 min-w-150 ${cabins.length > 0 || "flex items-center justify-center"} h-full p-3`}
             >
-              <div className="scrollbar-thin scrollbar-thumb-muted-foreground/10 flex h-full items-center gap-8 overflow-x-auto">
+              <div
+                ref={containerRef}
+                className="scrollbar-thin scrollbar-thumb-muted-foreground/10 flex h-full items-center gap-8 overflow-x-auto"
+              >
                 {cabins.map((cabin, idx) => (
                   <React.Fragment key={cabin.id}>
                     <div className="flex items-center">
@@ -472,6 +528,7 @@ export const AircraftSeatMap = ({
                       onDelete={onDeleteCabin}
                       onEditLabels={handleEditLabels}
                       onEditCabin={setEditingCabin}
+                      onDeleteSeat={onDeleteSeat}
                       selectedSeats={selectedSeats}
                     />
                   </React.Fragment>
@@ -495,7 +552,6 @@ export const AircraftSeatMap = ({
         </div>
       </div>
 
-      {/* ── Edit Column Labels Dialog ───────────────────────────────────── */}
       <Dialog
         open={!!editingLabelsCabinId}
         onOpenChange={() => setEditingLabelsCabinId(null)}
@@ -534,7 +590,6 @@ export const AircraftSeatMap = ({
         </DialogContent>
       </Dialog>
 
-      {/* ── Edit Cabin Dialog ───────────────────────────────────────────── */}
       <Dialog open={!!editingCabin} onOpenChange={() => setEditingCabin(null)}>
         <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
@@ -582,7 +637,9 @@ export const AircraftSeatMap = ({
                   className={errors.rowFrom ? "border-destructive" : ""}
                 />
                 {errors.rowFrom && (
-                  <p className="text-destructive mt-1 text-xs">{errors.rowFrom}</p>
+                  <p className="text-destructive mt-1 text-xs">
+                    {errors.rowFrom}
+                  </p>
                 )}
               </div>
             </div>
@@ -602,7 +659,9 @@ export const AircraftSeatMap = ({
                   className={errors.rowTo ? "border-destructive" : ""}
                 />
                 {errors.rowTo && (
-                  <p className="text-destructive mt-1 text-xs">{errors.rowTo}</p>
+                  <p className="text-destructive mt-1 text-xs">
+                    {errors.rowTo}
+                  </p>
                 )}
               </div>
             </div>
@@ -622,7 +681,9 @@ export const AircraftSeatMap = ({
                   className={errors.seatFormat ? "border-destructive" : ""}
                 />
                 {errors.seatFormat && (
-                  <p className="text-destructive mt-1 text-xs">{errors.seatFormat}</p>
+                  <p className="text-destructive mt-1 text-xs">
+                    {errors.seatFormat}
+                  </p>
                 )}
               </div>
             </div>

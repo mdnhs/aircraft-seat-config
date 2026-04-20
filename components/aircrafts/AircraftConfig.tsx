@@ -123,7 +123,93 @@ export default function AircraftConfig() {
 
         targetSeats.forEach((id) => {
           if (toolId === "delete") {
+            const currentTool = newConfig[id];
+            if (currentTool === "lav" || currentTool === "lav-occupied") {
+              const [rowStr, col] = id.split("-");
+              const row = parseInt(rowStr);
+              const cabin = cabins?.find((c) => row >= c.startRow && row <= c.endRow);
+              if (cabin) {
+                const groups = cabin.seatFormat.split("-").map(Number);
+                const totalCols = groups.reduce((a, b) => a + b, 0);
+                const labels = cabin.customLabels && cabin.customLabels.length === totalCols
+                  ? cabin.customLabels
+                  : Array.from({ length: totalCols }, (_, i) => String.fromCharCode(65 + i));
+                
+                const colIndex = labels.indexOf(col);
+                if (currentTool === "lav") {
+                  if (colIndex > 0) {
+                    const prevId = `${row}-${labels[colIndex - 1]}`;
+                    if (newConfig[prevId] === "lav-occupied") {
+                      delete newConfig[prevId];
+                    }
+                  }
+                } else {
+                  if (colIndex < labels.length - 1) {
+                    const nextId = `${row}-${labels[colIndex + 1]}`;
+                    if (newConfig[nextId] === "lav") {
+                      delete newConfig[nextId];
+                    }
+                  }
+                }
+              }
+            }
             delete newConfig[id];
+          } else if (toolId === "seat") {
+            const currentTool = newConfig[id];
+            // If dropping a seat tool on a lavatory, clear both halves
+            if (currentTool === "lav" || currentTool === "lav-occupied") {
+              const [rowStr, col] = id.split("-");
+              const row = parseInt(rowStr);
+              const cabin = cabins?.find((c) => row >= c.startRow && row <= c.endRow);
+              if (cabin) {
+                const groups = cabin.seatFormat.split("-").map(Number);
+                const totalCols = groups.reduce((a, b) => a + b, 0);
+                const labels = cabin.customLabels && cabin.customLabels.length === totalCols
+                  ? cabin.customLabels
+                  : Array.from({ length: totalCols }, (_, i) => String.fromCharCode(65 + i));
+                
+                const colIndex = labels.indexOf(col);
+                if (currentTool === "lav" && colIndex > 0) {
+                  const lowerId = `${row}-${labels[colIndex - 1]}`;
+                  if (newConfig[lowerId] === "lav-occupied") delete newConfig[lowerId];
+                } else if (currentTool === "lav-occupied" && colIndex < labels.length - 1) {
+                  const upperId = `${row}-${labels[colIndex + 1]}`;
+                  if (newConfig[upperId] === "lav") delete newConfig[upperId];
+                }
+              }
+            }
+            // Clear the "removed" or any equipment status to restore the seat
+            delete newConfig[id];
+          } else if (toolId === "lav") {
+            const [rowStr, col] = id.split("-");
+            const row = parseInt(rowStr);
+            
+            const cabin = cabins?.find((c) => row >= c.startRow && row <= c.endRow);
+            if (cabin) {
+              const groups = cabin.seatFormat.split("-").map(Number);
+              const totalCols = groups.reduce((a, b) => a + b, 0);
+              const labels = cabin.customLabels && cabin.customLabels.length === totalCols
+                ? cabin.customLabels
+                : Array.from({ length: totalCols }, (_, i) => String.fromCharCode(65 + i));
+              
+              const colIndex = labels.indexOf(col);
+              
+              // Spanning DOWN in UI means current seat and the one with LOWER index in labels array
+              if (colIndex > 0) {
+                const lowerCol = labels[colIndex - 1];
+                const lowerId = `${row}-${lowerCol}`;
+                newConfig[id] = "lav";
+                newConfig[lowerId] = "lav-occupied";
+              } else if (colIndex < labels.length - 1) {
+                // If we are at the very bottom (A), span UP by making the one above us the Primary
+                const upperCol = labels[colIndex + 1];
+                const upperId = `${row}-${upperCol}`;
+                newConfig[upperId] = "lav";
+                newConfig[id] = "lav-occupied";
+              } else {
+                newConfig[id] = "lav";
+              }
+            }
           } else {
             newConfig[id] = toolId;
           }
@@ -140,7 +226,7 @@ export default function AircraftConfig() {
     );
   }
 
-  const availableSeats = TOTAL_SEATS - Object.keys(seatConfig).length;
+  const availableSeats = TOTAL_SEATS - Object.keys(seatConfig || {}).length;
   const activeTool = TOOLS.find((t) => t.id === activeId);
 
   const handleAddCabin = (newCabin: CabinConfig, index?: number) => {
@@ -177,6 +263,46 @@ export default function AircraftConfig() {
     setSeatConfig(result.seatConfig);
   };
 
+  const handleDeleteSeat = (seatId: string) => {
+    setSeatConfig((prev) => {
+      const newConfig = { ...(prev || {}) };
+      const currentTool = newConfig[seatId];
+
+      if (currentTool === "lav" || currentTool === "lav-occupied") {
+        const [rowStr, col] = seatId.split("-");
+        const row = parseInt(rowStr);
+        const cabin = cabins?.find((c) => row >= c.startRow && row <= c.endRow);
+        if (cabin) {
+          const groups = cabin.seatFormat.split("-").map(Number);
+          const totalCols = groups.reduce((a, b) => a + b, 0);
+          const labels = cabin.customLabels && cabin.customLabels.length === totalCols
+            ? cabin.customLabels
+            : Array.from({ length: totalCols }, (_, i) => String.fromCharCode(65 + i));
+          
+          const colIndex = labels.indexOf(col);
+          if (currentTool === "lav") {
+            if (colIndex > 0) {
+              const lowerId = `${row}-${labels[colIndex - 1]}`;
+              if (newConfig[lowerId] === "lav-occupied") {
+                newConfig[lowerId] = "removed";
+              }
+            }
+          } else {
+            if (colIndex < labels.length - 1) {
+              const upperId = `${row}-${labels[colIndex + 1]}`;
+              if (newConfig[upperId] === "lav") {
+                newConfig[upperId] = "removed";
+              }
+            }
+          }
+        }
+      }
+
+      newConfig[seatId] = "removed";
+      return newConfig;
+    });
+  };
+
   return (
     <TooltipProvider>
       <div className="bg-muted/50 min-h-screen p-6 font-sans text-slate-800">
@@ -194,6 +320,7 @@ export default function AircraftConfig() {
             onAddCabin={handleAddCabin}
             onDeleteCabin={handleDeleteCabin}
             onUpdateCabin={handleUpdateCabin}
+            onDeleteSeat={handleDeleteSeat}
             selectedSeats={selectedSeats}
             onSelectedSeatsChange={setSelectedSeats}
           />

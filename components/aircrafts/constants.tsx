@@ -1,4 +1,4 @@
-import { Accessibility, Baby, Bed, Lock, Toilet, Trash2 } from "lucide-react";
+import { Accessibility, Baby, Bed, Lock, Toilet, Trash2, Armchair } from "lucide-react";
 import { Tool } from "./types";
 
 export const AIRCRAFT_TYPE = "B737-800";
@@ -6,6 +6,7 @@ export const REG_NO = "N123AA";
 export const TOTAL_SEATS = 96;
 
 export const TOOLS: Tool[] = [
+  { id: "seat", label: "SEAT", icon: <Armchair className="h-4 w-4" /> },
   { id: "lav", label: "LAV", icon: <Toilet className="h-4 w-4" /> },
   { id: "baby-cot", label: "Baby Cot", icon: <Baby className="h-4 w-4" /> },
   { id: "whchr", label: "WHCHR", icon: <Accessibility className="h-4 w-4" /> },
