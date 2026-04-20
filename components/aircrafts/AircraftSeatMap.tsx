@@ -32,7 +32,7 @@ import { AddCabinDialog } from "./AddCabinDialog";
 import { DraggableTool } from "./DraggableTool";
 import { Seat } from "./Seat";
 import { TOOLS } from "./constants";
-import { CabinConfig, SeatConfig } from "./types";
+import { CabinConfig, SeatConfig, ZoneConfig } from "./types";
 import Image from "next/image";
 import { z } from "zod";
 
@@ -60,6 +60,7 @@ interface SeatCellProps {
   equipment: string | undefined;
   selected: boolean;
   onDeleteSeat: (id: string) => void;
+  onCustomizeLavSize?: () => void;
   style?: React.CSSProperties;
 }
 
@@ -71,6 +72,7 @@ const SeatCell = ({
   equipment,
   selected,
   onDeleteSeat,
+  onCustomizeLavSize,
   style,
 }: SeatCellProps) => {
   const borderRadius = Math.max(4, Math.floor(size * 0.18));
@@ -79,21 +81,21 @@ const SeatCell = ({
 
   return (
     <ContextMenu>
-      <ContextMenuTrigger 
+      <ContextMenuTrigger
         render={
           <div
             className="group transition-transform"
-            style={{ 
+            style={{
               borderRadius: `${borderRadius}px`,
               width: `${size}px`,
               height: `${size}px`,
-              ...(style?.position === "absolute" ? { 
-                position: "absolute", 
-                top: style.top, 
-                left: style.left, 
-                height: style.height, 
+              ...(style?.position === "absolute" ? {
+                position: "absolute",
+                top: style.top,
+                left: style.left,
+                height: style.height,
                 width: style.width || `${size}px`,
-                zIndex: style.zIndex 
+                zIndex: style.zIndex
               } : {})
             }}
           />
@@ -114,6 +116,18 @@ const SeatCell = ({
         />
       </ContextMenuTrigger>
       <ContextMenuContent>
+        {isLav && (
+          <>
+            <ContextMenuItem
+              onClick={() => onCustomizeLavSize?.()}
+              className="gap-2"
+            >
+              <Settings2 className="h-4 w-4" />
+              Customize Size
+            </ContextMenuItem>
+            <ContextMenuSeparator />
+          </>
+        )}
         <ContextMenuItem
           disabled={isRemoved}
           onClick={() => onDeleteSeat(id)}
@@ -133,20 +147,24 @@ interface CabinSectionProps {
   cabin: CabinConfig;
   seatConfig: SeatConfig;
   selectedSeats: string[];
+  seatZoneMap: Record<string, { name: string; color: string }>;
   onDelete: (id: string) => void;
   onEditLabels: (id: string) => void;
   onEditCabin: (cabin: CabinConfig) => void;
   onDeleteSeat: (id: string) => void;
+  onCustomizeLavSize: (seatId: string) => void;
 }
 
 const CabinSection = ({
   cabin,
   seatConfig,
   selectedSeats,
+  seatZoneMap,
   onDelete,
   onEditLabels,
   onEditCabin,
   onDeleteSeat,
+  onCustomizeLavSize,
 }: CabinSectionProps) => {
   const rows = Array.from(
     { length: cabin.endRow - cabin.startRow + 1 },
@@ -188,6 +206,48 @@ const CabinSection = ({
     { groups: [] as string[][], nextIndex: 0 },
   ).groups;
 
+  const getLavHeight = (mainCol: string, lavSize: number): number => {
+    let gi = -1, ci = -1;
+    for (let g = 0; g < colGroups.length; g++) {
+      const c = colGroups[g].indexOf(mainCol);
+      if (c !== -1) { gi = g; ci = c; break; }
+    }
+    if (gi === -1) return seatSize;
+    let totalHeight = 0;
+    let remaining = lavSize;
+    let crossedAisle = false;
+    while (remaining > 0 && gi < colGroups.length) {
+      if (crossedAisle) { totalHeight += spacerHeight + verticalGap; crossedAisle = false; }
+      const inGroup = colGroups[gi].length - ci;
+      const take = Math.min(inGroup, remaining);
+      totalHeight += take * seatSize + (take - 1) * verticalGap;
+      remaining -= take;
+      if (remaining > 0 && gi < colGroups.length - 1) {
+        totalHeight += verticalGap;
+        gi++; ci = 0; crossedAisle = true;
+      } else break;
+    }
+    return totalHeight;
+  };
+
+  type ZoneSpan = { name: string; color: string; startIdx: number; length: number };
+  const rowZones = rows.map((row) => {
+    for (const col of allLabels) {
+      const z = seatZoneMap[`${row}-${col}`];
+      if (z) return z;
+    }
+    return null;
+  });
+  const zoneSpans = rowZones.reduce<ZoneSpan[]>((spans, rz, idx) => {
+    const last = spans[spans.length - 1];
+    if (rz && last && last.name === rz.name) {
+      last.length += 1;
+    } else if (rz) {
+      spans.push({ name: rz.name, color: rz.color, startIdx: idx, length: 1 });
+    }
+    return spans;
+  }, []);
+
   return (
     <ContextMenu>
       <ContextMenuTrigger
@@ -205,7 +265,58 @@ const CabinSection = ({
         </div>
 
         <div className="border-border/60 bg-background flex flex-col justify-center rounded-3xl border p-6 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)] transition-shadow hover:shadow-[0_8px_30px_-4px_rgba(0,0,0,0.08)]">
-          <div className="flex flex-col" style={{ gap: `${verticalGap}px` }}>
+          <div className="relative flex flex-col" style={{ gap: `${verticalGap}px` }}>
+            {zoneSpans.map((span) => {
+              const cellWidth = seatSize + 8;
+              const gapWidth = 8;
+              const left = 40 + span.startIdx * (cellWidth + gapWidth) - 4;
+              const width =
+                span.length * cellWidth + (span.length - 1) * gapWidth + 8;
+              return (
+                <div
+                  key={`zone-bg-${span.name}-${span.startIdx}`}
+                  className="pointer-events-none absolute inset-y-0 rounded-xl"
+                  style={{
+                    left: `${left}px`,
+                    width: `${width}px`,
+                    backgroundColor: `${span.color}15`,
+                  }}
+                />
+              );
+            })}
+
+            {zoneSpans.length > 0 && (
+              <div
+                className="relative flex items-center gap-2"
+                style={{ height: "20px", marginBottom: "2px" }}
+              >
+                <div className="w-8 flex-shrink-0" />
+                <div className="relative flex-1" style={{ height: "20px" }}>
+                  {zoneSpans.map((span) => {
+                    const cellWidth = seatSize + 8;
+                    const gapWidth = 8;
+                    const left = span.startIdx * (cellWidth + gapWidth);
+                    const width =
+                      span.length * cellWidth + (span.length - 1) * gapWidth;
+                    return (
+                      <div
+                        key={`${span.name}-${span.startIdx}`}
+                        className="absolute inset-y-0 flex items-center justify-center overflow-hidden rounded"
+                        style={{
+                          left: `${left}px`,
+                          width: `${width}px`,
+                          backgroundColor: span.color,
+                        }}
+                      >
+                        <span className="select-none truncate px-2 text-[9px] font-bold text-white">
+                          {span.name}
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
             <div
               className="flex items-center gap-2"
               style={{ marginBottom: `${verticalGap}px` }}
@@ -244,12 +355,16 @@ const CabinSection = ({
                       }
 
                       const isLav = equipment === "lav";
-                      const isLastInGroup = idx === group.length - 1;
-                      const hasAisleBelow = isLastInGroup && groupIdx < colGroups.length - 1;
-                      
-                      const lavHeight = isLav 
-                        ? (seatSize * 2 + verticalGap + (hasAisleBelow ? spacerHeight + verticalGap : 0))
-                        : seatSize;
+
+                      let lavSize = 1;
+                      if (isLav) {
+                        const colIdx = allLabels.indexOf(col);
+                        for (let i = colIdx - 1; i >= 0; i--) {
+                          if (seatConfig[`${row}-${allLabels[i]}`] === "lav-occupied") lavSize++;
+                          else break;
+                        }
+                      }
+                      const lavHeight = isLav ? getLavHeight(col, lavSize) : seatSize;
 
                       return (
                         <div
@@ -265,6 +380,7 @@ const CabinSection = ({
                             equipment={equipment}
                             selected={selectedSeats.includes(id)}
                             onDeleteSeat={onDeleteSeat}
+                            onCustomizeLavSize={isLav ? () => onCustomizeLavSize(id) : undefined}
                             style={isLav ? {
                               height: `${lavHeight}px`,
                               width: `${seatSize}px`,
@@ -322,10 +438,12 @@ const CabinSection = ({
 interface AircraftSeatMapProps {
   seatConfig: SeatConfig;
   cabins: CabinConfig[];
+  zones: ZoneConfig[];
   onAddCabin: (cabin: CabinConfig) => void;
   onDeleteCabin: (id: string) => void;
   onUpdateCabin: (id: string, updates: Partial<CabinConfig>) => void;
   onDeleteSeat: (id: string) => void;
+  onSetLavSize: (seatId: string, size: number) => void;
   selectedSeats: string[];
   onSelectedSeatsChange: (seats: string[]) => void;
 }
@@ -333,17 +451,51 @@ interface AircraftSeatMapProps {
 export const AircraftSeatMap = ({
   seatConfig,
   cabins,
+  zones,
   onAddCabin,
   onDeleteCabin,
   onUpdateCabin,
   onDeleteSeat,
+  onSetLavSize,
   selectedSeats,
   onSelectedSeatsChange,
 }: AircraftSeatMapProps) => {
+  const seatZoneMap = zones.reduce<Record<string, { name: string; color: string }>>((map, zone) => {
+    zone.seatIds.forEach((id) => {
+      map[id] = { name: zone.name, color: zone.color };
+    });
+    return map;
+  }, {});
   const [editingLabelsCabinId, setEditingLabelsCabinId] = useState<
     string | null
   >(null);
   const [newLabels, setNewLabels] = useState("");
+
+  const [lavSizeDialog, setLavSizeDialog] = useState<{
+    id: string;
+    size: number;
+    maxSize: number;
+  } | null>(null);
+
+  const handleCustomizeLavSize = (seatId: string) => {
+    const [rowStr, col] = seatId.split("-");
+    const row = parseInt(rowStr);
+    const cabin = cabins.find((c) => row >= c.startRow && row <= c.endRow);
+    if (!cabin) return;
+    const groups = cabin.seatFormat.split("-").map(Number);
+    const totalCols = groups.reduce((a, b) => a + b, 0);
+    const labels =
+      cabin.customLabels && cabin.customLabels.length === totalCols
+        ? cabin.customLabels
+        : Array.from({ length: totalCols }, (_, i) => String.fromCharCode(65 + i));
+    const colIndex = labels.indexOf(col);
+    let currentSize = 1;
+    for (let i = colIndex - 1; i >= 0; i--) {
+      if (seatConfig[`${row}-${labels[i]}`] === "lav-occupied") currentSize++;
+      else break;
+    }
+    setLavSizeDialog({ id: seatId, size: currentSize, maxSize: colIndex + 1 });
+  };
 
   const [editingCabin, setEditingCabin] = useState<CabinConfig | null>(null);
   const [cabinType, setCabinType] = useState("Economy");
@@ -530,6 +682,8 @@ export const AircraftSeatMap = ({
                       onEditCabin={setEditingCabin}
                       onDeleteSeat={onDeleteSeat}
                       selectedSeats={selectedSeats}
+                      seatZoneMap={seatZoneMap}
+                      onCustomizeLavSize={handleCustomizeLavSize}
                     />
                   </React.Fragment>
                 ))}
@@ -693,6 +847,80 @@ export const AircraftSeatMap = ({
               Cancel
             </Button>
             <Button onClick={handleSaveCabinEdit}>Apply Changes</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
+        open={!!lavSizeDialog}
+        onOpenChange={(open) => { if (!open) setLavSizeDialog(null); }}
+      >
+        <DialogContent className="sm:max-w-[320px]">
+          <DialogHeader>
+            <DialogTitle>Customize LAV Size</DialogTitle>
+            <DialogDescription>
+              Set how many seat spaces this LAV covers.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="flex flex-col items-center gap-6 py-4">
+            <div className="flex items-center gap-5">
+              <button
+                type="button"
+                onClick={() =>
+                  setLavSizeDialog((d) =>
+                    d ? { ...d, size: Math.max(1, d.size - 1) } : null,
+                  )
+                }
+                disabled={!lavSizeDialog || lavSizeDialog.size <= 1}
+                className="flex h-9 w-9 cursor-pointer items-center justify-center rounded-full border-2 border-gray-200 text-lg font-bold text-gray-600 transition-colors hover:border-blue-400 hover:text-blue-600 disabled:cursor-not-allowed disabled:opacity-30"
+              >
+                −
+              </button>
+
+              <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-blue-50 text-3xl font-bold text-blue-600">
+                {lavSizeDialog?.size ?? 1}
+              </div>
+
+              <button
+                type="button"
+                onClick={() =>
+                  setLavSizeDialog((d) =>
+                    d
+                      ? { ...d, size: Math.min(d.maxSize, d.size + 1) }
+                      : null,
+                  )
+                }
+                disabled={
+                  !lavSizeDialog || lavSizeDialog.size >= lavSizeDialog.maxSize
+                }
+                className="flex h-9 w-9 cursor-pointer items-center justify-center rounded-full border-2 border-gray-200 text-lg font-bold text-gray-600 transition-colors hover:border-blue-400 hover:text-blue-600 disabled:cursor-not-allowed disabled:opacity-30"
+              >
+                +
+              </button>
+            </div>
+
+            <p className="text-muted-foreground text-center text-xs">
+              Max {lavSizeDialog?.maxSize ?? 1} seat
+              {(lavSizeDialog?.maxSize ?? 1) !== 1 ? "s" : ""} available in
+              this column
+            </p>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setLavSizeDialog(null)}>
+              Cancel
+            </Button>
+            <Button
+              onClick={() => {
+                if (lavSizeDialog) {
+                  onSetLavSize(lavSizeDialog.id, lavSizeDialog.size);
+                  setLavSizeDialog(null);
+                }
+              }}
+            >
+              Apply
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

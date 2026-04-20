@@ -76,8 +76,24 @@ const tabs = [
   },
 ];
 
-export const AircraftToolbar = () => {
+interface AircraftToolbarProps {
+  selectedSeats: string[];
+  onZoneClick: () => void;
+}
+
+export const AircraftToolbar = ({
+  selectedSeats,
+  onZoneClick,
+}: AircraftToolbarProps) => {
   const [active, setActive] = useState<number | null>(null);
+
+  const handleTabClick = (idx: number) => {
+    setActive(active === idx ? null : idx);
+    if (tabs[idx].label === "Zones" && selectedSeats.length > 0) {
+      onZoneClick();
+    }
+  };
+
   return (
     <div className="flex items-center justify-between rounded-t-xl border border-b-0 border-gray-100 bg-white px-6 py-3">
       <span className="text-muted-foreground text-[11px] font-bold tracking-widest uppercase">
@@ -87,7 +103,7 @@ export const AircraftToolbar = () => {
         {tabs.map((tab, idx) => (
           <button
             key={tab.label}
-            onClick={() => setActive(active === idx ? null : idx)}
+            onClick={() => handleTabClick(idx)}
             className={`flex cursor-pointer items-center gap-1.5 rounded-full px-3.5 py-1.5 text-[11px] font-bold tracking-wide uppercase transition-colors ${
               active === idx
                 ? "bg-blue-50 text-blue-600"
@@ -96,6 +112,11 @@ export const AircraftToolbar = () => {
           >
             {tab.icon}
             {tab.label}
+            {tab.label === "Zones" && selectedSeats.length > 0 && (
+              <span className="ml-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-blue-500 px-1 text-[9px] font-bold text-white">
+                {selectedSeats.length}
+              </span>
+            )}
           </button>
         ))}
       </div>

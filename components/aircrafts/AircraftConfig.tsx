@@ -15,8 +15,9 @@ import React, { useEffect, useState } from "react";
 import { AircraftHeader } from "./AircraftHeader";
 import { AircraftSeatMap } from "./AircraftSeatMap";
 import { AircraftToolbar } from "./AircraftToolbar";
+import { AddZoneDialog } from "./AddZoneDialog";
 import { TOOLS, TOTAL_SEATS } from "./constants";
-import { CabinConfig, SeatConfig } from "./types";
+import { CabinConfig, SeatConfig, ZoneConfig } from "./types";
 
 const INITIAL_CABINS: CabinConfig[] = [];
 
@@ -85,6 +86,13 @@ export default function AircraftConfig() {
       parseAsJson<CabinConfig>((v) => v as CabinConfig),
     ).withDefault(INITIAL_CABINS),
   );
+  const [zones, setZones] = useQueryState<ZoneConfig[]>(
+    "zones",
+    parseAsArrayOf(
+      parseAsJson<ZoneConfig>((v) => v as ZoneConfig),
+    ).withDefault([]),
+  );
+  const [showAddZoneDialog, setShowAddZoneDialog] = useState(false);
   const [activeId, setActiveId] = React.useState<string | null>(null);
 
   const sensors = useSensors(
@@ -263,6 +271,44 @@ export default function AircraftConfig() {
     setSeatConfig(result.seatConfig);
   };
 
+  const handleSetLavSize = (seatId: string, size: number) => {
+    const [rowStr, col] = seatId.split("-");
+    const row = parseInt(rowStr);
+    const cabin = (cabins || []).find(
+      (c) => row >= c.startRow && row <= c.endRow,
+    );
+    if (!cabin) return;
+    const groups = cabin.seatFormat.split("-").map(Number);
+    const totalCols = groups.reduce((a, b) => a + b, 0);
+    const labels =
+      cabin.customLabels && cabin.customLabels.length === totalCols
+        ? cabin.customLabels
+        : Array.from({ length: totalCols }, (_, i) =>
+            String.fromCharCode(65 + i),
+          );
+    const colIndex = labels.indexOf(col);
+    setSeatConfig((prev) => {
+      const current = { ...(prev || {}) };
+      // Clear existing lav-occupied cells below this lav
+      for (let i = colIndex - 1; i >= 0; i--) {
+        if (current[`${row}-${labels[i]}`] === "lav-occupied")
+          delete current[`${row}-${labels[i]}`];
+        else break;
+      }
+      // Place new occupied cells
+      for (let i = 1; i < size; i++) {
+        const idx = colIndex - i;
+        if (idx >= 0) current[`${row}-${labels[idx]}`] = "lav-occupied";
+      }
+      return current;
+    });
+  };
+
+  const handleAddZone = (zone: ZoneConfig) => {
+    setZones((prev) => [...(prev || []), zone]);
+    setSelectedSeats([]);
+  };
+
   const handleDeleteSeat = (seatId: string) => {
     setSeatConfig((prev) => {
       const newConfig = { ...(prev || {}) };
@@ -313,16 +359,27 @@ export default function AircraftConfig() {
           collisionDetection={rectIntersection}
         >
           <AircraftHeader availableSeats={availableSeats} />
-          <AircraftToolbar />
+          <AircraftToolbar
+            selectedSeats={selectedSeats}
+            onZoneClick={() => setShowAddZoneDialog(true)}
+          />
           <AircraftSeatMap
             seatConfig={seatConfig || {}}
             cabins={cabins || INITIAL_CABINS}
+            zones={zones || []}
             onAddCabin={handleAddCabin}
             onDeleteCabin={handleDeleteCabin}
             onUpdateCabin={handleUpdateCabin}
             onDeleteSeat={handleDeleteSeat}
+            onSetLavSize={handleSetLavSize}
             selectedSeats={selectedSeats}
             onSelectedSeatsChange={setSelectedSeats}
+          />
+          <AddZoneDialog
+            open={showAddZoneDialog}
+            onOpenChange={setShowAddZoneDialog}
+            selectedSeats={selectedSeats}
+            onAddZone={handleAddZone}
           />
 
           <DragOverlay dropAnimation={null} zIndex={1000}>

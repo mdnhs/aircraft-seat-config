@@ -19,3 +19,10 @@ export interface CabinConfig {
   seatSize: "lg" | "md" | "sm";
   customLabels?: string[];
 }
+
+export interface ZoneConfig {
+  id: string;
+  name: string;
+  color: string;
+  seatIds: string[];
+}
