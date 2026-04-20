@@ -22,13 +22,11 @@ function Tooltip({ ...props }: TooltipPrimitive.Root.Props) {
 }
 
 function TooltipTrigger({
-  nativeButton,
   ...props
 }: TooltipPrimitive.Trigger.Props) {
   return (
     <TooltipPrimitive.Trigger
       data-slot="tooltip-trigger"
-      nativeButton={nativeButton}
       {...props}
     />
   )

@@ -130,12 +130,13 @@
 }
 
 .selection-area {
-  background: rgba(59, 130, 246, 0.4) !important;
-  border: 2px solid rgba(59, 130, 246, 1) !important;
+  background: rgba(59, 130, 246, 0.2) !important;
+  border: 1px solid rgba(59, 130, 246, 0.5) !important;
   border-radius: 4px !important;
-  z-index: 10000 !important;
+  z-index: 1 !important;
   pointer-events: none !important;
-  position: fixed !important;
-  display: block !important;
-  visibility: visible !important;
+}
+
+.selection-boundary {
+  position: relative !important;
 }

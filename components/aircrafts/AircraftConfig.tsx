@@ -20,6 +20,58 @@ import { CabinConfig, SeatConfig } from "./types";
 
 const INITIAL_CABINS: CabinConfig[] = [];
 
+// ─── Utility ──────────────────────────────────────────────────────────────────
+
+function recalculateRows(
+  cabins: CabinConfig[],
+  seatConfig: SeatConfig,
+): { cabins: CabinConfig[]; seatConfig: SeatConfig } {
+  let nextRow = 1;
+  const newCabins: CabinConfig[] = [];
+  const newSeatConfig: SeatConfig = {};
+
+  for (const cabin of cabins) {
+    const rowCount = Math.max(1, cabin.endRow - cabin.startRow + 1);
+    const oldStart = cabin.startRow;
+    const newStart = nextRow;
+    const newEnd = nextRow + rowCount - 1;
+
+    newCabins.push({
+      ...cabin,
+      startRow: newStart,
+      endRow: newEnd,
+    });
+
+    // Map old row/seat assignments to new row numbers
+    const groups = cabin.seatFormat.split("-").map(Number);
+    const totalCols = groups.reduce((a, b) => a + b, 0);
+    const labels =
+      cabin.customLabels && cabin.customLabels.length === totalCols
+        ? cabin.customLabels
+        : Array.from({ length: totalCols }, (_, i) =>
+            String.fromCharCode(65 + i),
+          );
+
+    for (let r = 0; r < rowCount; r++) {
+      const oldRow = oldStart + r;
+      const newRow = newStart + r;
+      labels.forEach((col) => {
+        const oldKey = `${oldRow}-${col}`;
+        const newKey = `${newRow}-${col}`;
+        if (seatConfig[oldKey]) {
+          newSeatConfig[newKey] = seatConfig[oldKey];
+        }
+      });
+    }
+
+    nextRow = newEnd + 1;
+  }
+
+  return { cabins: newCabins, seatConfig: newSeatConfig };
+}
+
+// ─── AircraftConfig ───────────────────────────────────────────────────────────
+
 export default function AircraftConfig() {
   const [mounted, setMounted] = useState(false);
   const [selectedSeats, setSelectedSeats] = useState<string[]>([]);
@@ -65,8 +117,6 @@ export default function AircraftConfig() {
         const current = prev || {};
         const newConfig = { ...current };
 
-        // If the dropped seat is part of a selection, apply to all selected seats
-        // Otherwise, just apply to the dropped seat
         const targetSeats = selectedSeats.includes(seatId)
           ? selectedSeats
           : [seatId];
@@ -93,19 +143,38 @@ export default function AircraftConfig() {
   const availableSeats = TOTAL_SEATS - Object.keys(seatConfig).length;
   const activeTool = TOOLS.find((t) => t.id === activeId);
 
-  const handleAddCabin = (newCabin: CabinConfig) => {
-    // Explicitly using the label provided by the dialog (which is the cabin type)
-    setCabins((prev) => [...(prev || []), newCabin]);
+  const handleAddCabin = (newCabin: CabinConfig, index?: number) => {
+    const currentCabins = cabins || [];
+    const nextCabins = [...currentCabins];
+    if (index !== undefined) {
+      nextCabins.splice(index, 0, newCabin);
+    } else {
+      nextCabins.push(newCabin);
+    }
+
+    const result = recalculateRows(nextCabins, seatConfig || {});
+    setCabins(result.cabins);
+    setSeatConfig(result.seatConfig);
   };
 
   const handleDeleteCabin = (id: string) => {
-    setCabins((prev) => (prev || []).filter((c) => c.id !== id));
+    const currentCabins = cabins || [];
+    const nextCabins = currentCabins.filter((c) => c.id !== id);
+
+    const result = recalculateRows(nextCabins, seatConfig || {});
+    setCabins(result.cabins);
+    setSeatConfig(result.seatConfig);
   };
 
   const handleUpdateCabin = (id: string, updates: Partial<CabinConfig>) => {
-    setCabins((prev) =>
-      (prev || []).map((c) => (c.id === id ? { ...c, ...updates } : c)),
+    const currentCabins = cabins || [];
+    const nextCabins = currentCabins.map((c) =>
+      c.id === id ? { ...c, ...updates } : c,
     );
+
+    const result = recalculateRows(nextCabins, seatConfig || {});
+    setCabins(result.cabins);
+    setSeatConfig(result.seatConfig);
   };
 
   return (
@@ -120,7 +189,7 @@ export default function AircraftConfig() {
           <AircraftHeader availableSeats={availableSeats} />
           <AircraftToolbar />
           <AircraftSeatMap
-            seatConfig={seatConfig}
+            seatConfig={seatConfig || {}}
             cabins={cabins || INITIAL_CABINS}
             onAddCabin={handleAddCabin}
             onDeleteCabin={handleDeleteCabin}

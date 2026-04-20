@@ -20,28 +20,90 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Plus } from "lucide-react";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { CabinConfig } from "./types";
+import { z } from "zod";
+
+const cabinSchema = z.object({
+  cabinType: z.string().min(1, "Cabin type is required"),
+  rowFrom: z.number().min(1, "Row From must be at least 1"),
+  rowTo: z.number().min(1, "Row To must be at least 1"),
+  seatFormat: z
+    .string()
+    .regex(/^\d+(-\d+)*$/, "Invalid format (e.g., 3-3, 2-4-2)"),
+}).refine((data) => data.rowTo >= data.rowFrom, {
+  message: "Row To must be greater than or equal to Row From",
+  path: ["rowTo"],
+});
 
 interface AddCabinDialogProps {
-  onAddCabin: (cabin: CabinConfig) => void;
+  onAddCabin: (cabin: CabinConfig, index?: number) => void;
   trigger?: React.ReactNode;
+  index?: number;
+  cabins?: CabinConfig[];
 }
 
-export function AddCabinDialog({ onAddCabin, trigger }: AddCabinDialogProps) {
+export function AddCabinDialog({
+  onAddCabin,
+  trigger,
+  index = 0,
+  cabins = [],
+}: AddCabinDialogProps) {
   const [open, setOpen] = useState(false);
   const [cabinType, setCabinType] = useState("Economy");
   const [rowFrom, setRowFrom] = useState("");
   const [rowTo, setRowTo] = useState("");
   const [seatFormat, setSeatFormat] = useState("3-3");
+  const [errors, setErrors] = useState<Record<string, string>>({});
+
+  const isBetween = index < cabins.length;
+
+  useEffect(() => {
+    if (open) {
+      const prevCabin = cabins[index - 1];
+      const startRow = prevCabin ? prevCabin.endRow + 1 : 1;
+      setRowFrom(startRow.toString());
+      setRowTo((startRow + 9).toString()); // Default 10 rows
+    }
+  }, [open, index, cabins]);
 
   const handleApply = () => {
+    const rFrom = parseInt(rowFrom);
+    const rTo = parseInt(rowTo);
+
+    const result = cabinSchema.safeParse({
+      cabinType,
+      rowFrom: rFrom,
+      rowTo: rTo,
+      seatFormat,
+    });
+
+    if (!result.success) {
+      const newErrors: Record<string, string> = {};
+      result.error.issues.forEach((issue) => {
+        newErrors[issue.path[0]] = issue.message;
+      });
+      setErrors(newErrors);
+      return;
+    }
+
+    // At-end validation for overlap
+    if (!isBetween && cabins.length > 0) {
+      const lastCabin = cabins[cabins.length - 1];
+      if (rFrom <= lastCabin.endRow) {
+        setErrors({
+          rowFrom: `Row ${rFrom} already exists in ${lastCabin.label} cabin.`,
+        });
+        return;
+      }
+    }
+
     const newCabin: CabinConfig = {
       id: Math.random().toString(36).substring(7),
       label: cabinType,
-      startRow: parseInt(rowFrom),
-      endRow: parseInt(rowTo),
-      seatFormat: seatFormat,
+      startRow: rFrom,
+      endRow: rTo,
+      seatFormat,
       seatSize:
         cabinType === "Business"
           ? "lg"
@@ -49,12 +111,9 @@ export function AddCabinDialog({ onAddCabin, trigger }: AddCabinDialogProps) {
             ? "md"
             : "sm",
     };
-    onAddCabin(newCabin);
+    onAddCabin(newCabin, index);
     setOpen(false);
-    // Reset fields
-    setRowFrom("");
-    setRowTo("");
-    setSeatFormat("3-3");
+    setErrors({});
   };
 
   return (
@@ -62,7 +121,6 @@ export function AddCabinDialog({ onAddCabin, trigger }: AddCabinDialogProps) {
       <DialogTrigger
         nativeButton={false}
         render={(triggerProps) => {
-          // Destructure nativeButton to prevent it from reaching the DOM element
           const { nativeButton, ...props } = triggerProps as any;
           if (trigger) {
             return React.cloneElement(trigger as React.ReactElement, props);
@@ -79,7 +137,9 @@ export function AddCabinDialog({ onAddCabin, trigger }: AddCabinDialogProps) {
         <DialogHeader>
           <DialogTitle>Add Cabin</DialogTitle>
           <DialogDescription>
-            Create a cabin layout for your aircraft.
+            {isBetween 
+              ? "Insert a new cabin between existing ones. Row numbers will be updated automatically."
+              : "Add a new cabin to the aircraft."}
           </DialogDescription>
         </DialogHeader>
         <div className="grid gap-4 py-4">
@@ -88,7 +148,7 @@ export function AddCabinDialog({ onAddCabin, trigger }: AddCabinDialogProps) {
               Cabin Type
             </Label>
             <div className="col-span-3">
-              <Select value={cabinType} onValueChange={setCabinType}>
+              <Select value={cabinType} onValueChange={(val) => setCabinType(val ?? "Economy")}>
                 <SelectTrigger id="cabin-type" className="w-full">
                   <SelectValue placeholder="Select type" />
                 </SelectTrigger>
@@ -106,37 +166,62 @@ export function AddCabinDialog({ onAddCabin, trigger }: AddCabinDialogProps) {
             <Label htmlFor="row-from" className="text-right">
               Row From
             </Label>
-            <Input
-              id="row-from"
-              type="number"
-              value={rowFrom}
-              onChange={(e) => setRowFrom(e.target.value)}
-              className="col-span-3"
-            />
+            <div className="col-span-3">
+              <Input
+                id="row-from"
+                type="number"
+                value={rowFrom}
+                disabled={isBetween}
+                onChange={(e) => {
+                  setRowFrom(e.target.value);
+                  setErrors((prev) => ({ ...prev, rowFrom: "" }));
+                }}
+                className={errors.rowFrom ? "border-destructive" : ""}
+              />
+              {errors.rowFrom && (
+                <p className="text-destructive mt-1 text-xs">{errors.rowFrom}</p>
+              )}
+            </div>
           </div>
           <div className="grid grid-cols-4 items-center gap-4">
             <Label htmlFor="row-to" className="text-right">
               Row To
             </Label>
-            <Input
-              id="row-to"
-              type="number"
-              value={rowTo}
-              onChange={(e) => setRowTo(e.target.value)}
-              className="col-span-3"
-            />
+            <div className="col-span-3">
+              <Input
+                id="row-to"
+                type="number"
+                value={rowTo}
+                onChange={(e) => {
+                  setRowTo(e.target.value);
+                  setErrors((prev) => ({ ...prev, rowTo: "" }));
+                }}
+                className={errors.rowTo ? "border-destructive" : ""}
+              />
+              {errors.rowTo && (
+                <p className="text-destructive mt-1 text-xs">{errors.rowTo}</p>
+              )}
+            </div>
           </div>
           <div className="grid grid-cols-4 items-center gap-4">
             <Label htmlFor="seat-format" className="text-right">
               Seat Format
             </Label>
-            <Input
-              id="seat-format"
-              value={seatFormat}
-              onChange={(e) => setSeatFormat(e.target.value)}
-              placeholder="e.g. 2-4-2"
-              className="col-span-3"
-            />
+            <div className="col-span-3">
+              <Input
+                id="seat-format"
+                value={seatFormat}
+                onChange={(e) => {
+                  setSeatFormat(e.target.value);
+                  setErrors((prev) => ({ ...prev, seatFormat: "" }));
+                }}
+                placeholder="e.g. 2-4-2"
+                className={errors.seatFormat ? "border-destructive" : ""}
+              />
+              {errors.seatFormat && (
+                <p className="text-destructive mt-1 text-xs">{errors.seatFormat}</p>
+              )}
+            </div>
           </div>
         </div>
         <DialogFooter>

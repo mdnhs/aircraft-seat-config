@@ -25,7 +25,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import Selection from "@viselect/vanilla";
+import SelectionArea from "@viselect/vanilla";
 import { Edit2, Plus, Settings2, Trash2 } from "lucide-react";
 import React, { useEffect, useRef, useState } from "react";
 import { AddCabinDialog } from "./AddCabinDialog";
@@ -34,6 +34,19 @@ import { Seat } from "./Seat";
 import { TOOLS } from "./constants";
 import { CabinConfig, SeatConfig } from "./types";
 import Image from "next/image";
+import { z } from "zod";
+
+const cabinSchema = z.object({
+  cabinType: z.string().min(1, "Cabin type is required"),
+  rowFrom: z.number().min(1, "Row From must be at least 1"),
+  rowTo: z.number().min(1, "Row To must be at least 1"),
+  seatFormat: z
+    .string()
+    .regex(/^\d+(-\d+)*$/, "Invalid format (e.g., 3-3, 2-4-2)"),
+}).refine((data) => data.rowTo >= data.rowFrom, {
+  message: "Row To must be greater than or equal to Row From",
+  path: ["rowTo"],
+});
 
 // ─── SeatCell ─────────────────────────────────────────────────────────────────
 
@@ -273,9 +286,10 @@ export const AircraftSeatMap = ({
   const [rowFrom, setRowFrom] = useState("");
   const [rowTo, setRowTo] = useState("");
   const [seatFormat, setSeatFormat] = useState("3-3");
+  const [errors, setErrors] = useState<Record<string, string>>({});
 
   const containerRef = useRef<HTMLDivElement>(null);
-  const selectionRef = useRef<Selection | null>(null);
+  const selectionRef = useRef<SelectionArea | null>(null);
 
   // ✅ Stable ref for the callback — avoids putting it in the effect dep array,
   //    which would destroy and recreate the Selection instance on every render.
@@ -297,12 +311,12 @@ export const AircraftSeatMap = ({
     // Destroy any leftover instance (StrictMode double-invoke safety)
     selectionRef.current?.destroy();
 
-    selectionRef.current = new Selection({
-      class: "selection-area",
+    selectionRef.current = new SelectionArea({
+      selectionAreaClass: "selection-area",
       selectables: [".seat-selectable"],
       boundaries: [containerRef.current],
       container: containerRef.current,
-    });
+    } as any);
 
     selectionRef.current.on("beforestart", ({ event }) => {
       const target = event?.target as HTMLElement | null;
@@ -346,6 +360,7 @@ export const AircraftSeatMap = ({
       setRowFrom(editingCabin.startRow.toString());
       setRowTo(editingCabin.endRow.toString());
       setSeatFormat(editingCabin.seatFormat);
+      setErrors({});
     }
   }, [editingCabin]);
 
@@ -374,11 +389,27 @@ export const AircraftSeatMap = ({
 
   const handleSaveCabinEdit = () => {
     if (editingCabin) {
+      const result = cabinSchema.safeParse({
+        cabinType,
+        rowFrom: parseInt(rowFrom),
+        rowTo: parseInt(rowTo),
+        seatFormat,
+      });
+
+      if (!result.success) {
+        const newErrors: Record<string, string> = {};
+        result.error.issues.forEach((issue) => {
+          newErrors[issue.path[0]] = issue.message;
+        });
+        setErrors(newErrors);
+        return;
+      }
+
       onUpdateCabin(editingCabin.id, {
         label: cabinType,
-        startRow: parseInt(rowFrom),
-        endRow: parseInt(rowTo),
-        seatFormat: seatFormat,
+        startRow: result.data.rowFrom,
+        endRow: result.data.rowTo,
+        seatFormat: result.data.seatFormat,
         seatSize:
           cabinType === "Business"
             ? "lg"
@@ -387,6 +418,7 @@ export const AircraftSeatMap = ({
               : "sm",
       });
       setEditingCabin(null);
+      setErrors({});
     }
   };
 
@@ -420,21 +452,36 @@ export const AircraftSeatMap = ({
               className={`min-h-106 min-w-150 ${cabins.length > 0 || "flex items-center justify-center"} h-full p-3`}
             >
               <div className="scrollbar-thin scrollbar-thumb-muted-foreground/10 flex h-full items-center gap-8 overflow-x-auto">
-                {cabins.map((cabin) => (
-                  <CabinSection
-                    key={cabin.id}
-                    cabin={cabin}
-                    seatConfig={seatConfig}
-                    onDelete={onDeleteCabin}
-                    onEditLabels={handleEditLabels}
-                    onEditCabin={setEditingCabin}
-                    selectedSeats={selectedSeats}
-                  />
+                {cabins.map((cabin, idx) => (
+                  <React.Fragment key={cabin.id}>
+                    <div className="flex items-center">
+                      <AddCabinDialog
+                        onAddCabin={onAddCabin}
+                        index={idx}
+                        cabins={cabins}
+                        trigger={
+                          <div className="border-border text-muted-foreground group flex h-10 w-10 cursor-pointer items-center justify-center rounded-xl border-2 shadow-sm transition-all hover:border-blue-400 hover:bg-blue-50/50 hover:text-blue-500 hover:shadow-md">
+                            <Plus className="h-6 w-6 transition-transform group-hover:scale-110" />
+                          </div>
+                        }
+                      />
+                    </div>
+                    <CabinSection
+                      cabin={cabin}
+                      seatConfig={seatConfig}
+                      onDelete={onDeleteCabin}
+                      onEditLabels={handleEditLabels}
+                      onEditCabin={setEditingCabin}
+                      selectedSeats={selectedSeats}
+                    />
+                  </React.Fragment>
                 ))}
 
                 <div className="flex items-center">
                   <AddCabinDialog
                     onAddCabin={onAddCabin}
+                    index={cabins.length}
+                    cabins={cabins}
                     trigger={
                       <div className="border-border text-muted-foreground group flex h-10 w-10 cursor-pointer items-center justify-center rounded-xl border-2 shadow-sm transition-all hover:border-blue-400 hover:bg-blue-50/50 hover:text-blue-500 hover:shadow-md">
                         <Plus className="h-6 w-6 transition-transform group-hover:scale-110" />
@@ -504,7 +551,7 @@ export const AircraftSeatMap = ({
               <div className="col-span-3">
                 <Select
                   value={cabinType}
-                  onValueChange={(value) => setCabinType(value ?? "Economy")}
+                  onValueChange={(val) => setCabinType(val ?? "Economy")}
                 >
                   <SelectTrigger id="edit-cabin-type" className="w-full">
                     <SelectValue placeholder="Select type" />
@@ -523,37 +570,61 @@ export const AircraftSeatMap = ({
               <Label htmlFor="edit-row-from" className="text-right">
                 Row From
               </Label>
-              <Input
-                id="edit-row-from"
-                type="number"
-                value={rowFrom}
-                onChange={(e) => setRowFrom(e.target.value)}
-                className="col-span-3"
-              />
+              <div className="col-span-3">
+                <Input
+                  id="edit-row-from"
+                  type="number"
+                  value={rowFrom}
+                  onChange={(e) => {
+                    setRowFrom(e.target.value);
+                    setErrors((prev) => ({ ...prev, rowFrom: "" }));
+                  }}
+                  className={errors.rowFrom ? "border-destructive" : ""}
+                />
+                {errors.rowFrom && (
+                  <p className="text-destructive mt-1 text-xs">{errors.rowFrom}</p>
+                )}
+              </div>
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="edit-row-to" className="text-right">
                 Row To
               </Label>
-              <Input
-                id="edit-row-to"
-                type="number"
-                value={rowTo}
-                onChange={(e) => setRowTo(e.target.value)}
-                className="col-span-3"
-              />
+              <div className="col-span-3">
+                <Input
+                  id="edit-row-to"
+                  type="number"
+                  value={rowTo}
+                  onChange={(e) => {
+                    setRowTo(e.target.value);
+                    setErrors((prev) => ({ ...prev, rowTo: "" }));
+                  }}
+                  className={errors.rowTo ? "border-destructive" : ""}
+                />
+                {errors.rowTo && (
+                  <p className="text-destructive mt-1 text-xs">{errors.rowTo}</p>
+                )}
+              </div>
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="edit-seat-format" className="text-right">
                 Seat Format
               </Label>
-              <Input
-                id="edit-seat-format"
-                value={seatFormat}
-                onChange={(e) => setSeatFormat(e.target.value)}
-                placeholder="e.g. 2-4-2"
-                className="col-span-3"
-              />
+              <div className="col-span-3">
+                <Input
+                  id="edit-seat-format"
+                  value={seatFormat}
+                  onChange={(e) => {
+                    setSeatFormat(e.target.value);
+                    setErrors((prev) => ({ ...prev, seatFormat: "" }));
+                  }}
+                  placeholder="e.g. 2-4-2"
+                  className={errors.seatFormat ? "border-destructive" : ""}
+                />
+                {errors.seatFormat && (
+                  <p className="text-destructive mt-1 text-xs">{errors.seatFormat}</p>
+                )}
+              </div>
             </div>
           </div>
           <DialogFooter>

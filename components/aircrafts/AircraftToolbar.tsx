@@ -2,23 +2,6 @@ import { useState } from "react";
 
 const tabs = [
   {
-    label: "Layout",
-    icon: (
-      <svg
-        width="15"
-        height="15"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="2.2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      >
-        <polygon points="3 11 22 2 13 21 11 13 3 11" />
-      </svg>
-    ),
-  },
-  {
     label: "Zones",
     icon: (
       <svg
@@ -72,10 +55,29 @@ const tabs = [
       </svg>
     ),
   },
+  {
+    label: "Emergency Exit",
+    icon: (
+      <svg
+        width="15"
+        height="15"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2.2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      >
+        <path d="M13 4h3a2 2 0 0 1 2 2v14" />
+        <path d="M2 20h20" />
+        <path d="M13 20v-16a1 1 0 0 0-1-1H4a1 1 0 0 0-1 1v16" />
+      </svg>
+    ),
+  },
 ];
 
 export const AircraftToolbar = () => {
-  const [active, setActive] = useState(0);
+  const [active, setActive] = useState<number | null>(null);
   return (
     <div className="flex items-center justify-between rounded-t-xl border border-b-0 border-gray-100 bg-white px-6 py-3">
       <span className="text-muted-foreground text-[11px] font-bold tracking-widest uppercase">
@@ -85,8 +87,8 @@ export const AircraftToolbar = () => {
         {tabs.map((tab, idx) => (
           <button
             key={tab.label}
-            onClick={() => setActive(idx)}
-            className={`flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-[11px] font-bold tracking-wide uppercase transition-colors ${
+            onClick={() => setActive(active === idx ? null : idx)}
+            className={`flex cursor-pointer items-center gap-1.5 rounded-full px-3.5 py-1.5 text-[11px] font-bold tracking-wide uppercase transition-colors ${
               active === idx
                 ? "bg-blue-50 text-blue-600"
                 : "text-gray-400 hover:bg-gray-100 hover:text-gray-700"
