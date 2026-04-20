@@ -120,7 +120,7 @@ const SeatCell = ({
           className="text-destructive focus:text-destructive gap-2"
         >
           <Trash2 className="h-4 w-4" />
-          Delete Seat
+          {isLav ? "Delete LAV" : "Delete Seat"}
         </ContextMenuItem>
       </ContextMenuContent>
     </ContextMenu>
