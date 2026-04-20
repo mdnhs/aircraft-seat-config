@@ -26,7 +26,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import SelectionArea from "@viselect/vanilla";
-import { Edit2, Plus, Settings2, Trash2 } from "lucide-react";
+import { Plus, Settings2, Trash2 } from "lucide-react";
 import React, { useEffect, useRef, useState } from "react";
 import { AddCabinDialog } from "./AddCabinDialog";
 import { DraggableTool } from "./DraggableTool";
@@ -149,10 +149,11 @@ interface CabinSectionProps {
   selectedSeats: string[];
   seatZoneMap: Record<string, { name: string; color: string }>;
   onDelete: (id: string) => void;
-  onEditLabels: (id: string) => void;
   onEditCabin: (cabin: CabinConfig) => void;
   onDeleteSeat: (id: string) => void;
   onCustomizeLavSize: (seatId: string) => void;
+  onRenameColumn: (cabinId: string, colIndex: number, currentLabel: string) => void;
+  onRenameRow: (cabinId: string, rowIndex: number, currentLabel: string) => void;
 }
 
 const CabinSection = ({
@@ -161,15 +162,23 @@ const CabinSection = ({
   selectedSeats,
   seatZoneMap,
   onDelete,
-  onEditLabels,
   onEditCabin,
   onDeleteSeat,
   onCustomizeLavSize,
+  onRenameColumn,
+  onRenameRow,
 }: CabinSectionProps) => {
   const rows = Array.from(
     { length: cabin.endRow - cabin.startRow + 1 },
     (_, i) => cabin.startRow + i,
   );
+
+  const rowLabels = rows.map((row, idx) => {
+    if (cabin.customRowLabels && cabin.customRowLabels[idx]) {
+      return cabin.customRowLabels[idx];
+    }
+    return String(row).padStart(2, "0");
+  });
 
   const groups = cabin.seatFormat.split("-").map(Number);
   const totalCols = groups.reduce((a, b) => a + b, 0);
@@ -322,14 +331,30 @@ const CabinSection = ({
               style={{ marginBottom: `${verticalGap}px` }}
             >
               <div className="w-8 flex-shrink-0" />
-              {rows.map((row) => (
-                <span
-                  key={row}
-                  style={{ width: `${seatSize + 8}px` }}
-                  className="text-muted-foreground/40 flex-shrink-0 text-center text-[10px] font-bold select-none"
-                >
-                  {String(row).padStart(2, "0")}
-                </span>
+              {rows.map((row, idx) => (
+                <ContextMenu key={row}>
+                  <ContextMenuTrigger
+                    render={
+                      <div
+                        className="flex-shrink-0 cursor-context-menu"
+                        style={{ width: `${seatSize + 8}px` }}
+                      />
+                    }
+                  >
+                    <span className="text-muted-foreground/40 block text-center text-[10px] font-bold select-none hover:text-blue-500 transition-colors">
+                      {rowLabels[idx]}
+                    </span>
+                  </ContextMenuTrigger>
+                  <ContextMenuContent>
+                    <ContextMenuItem
+                      onClick={() => onRenameRow(cabin.id, idx, rowLabels[idx])}
+                      className="gap-2"
+                    >
+                      <Settings2 className="h-4 w-4" />
+                      Rename Row
+                    </ContextMenuItem>
+                  </ContextMenuContent>
+                </ContextMenu>
               ))}
             </div>
 
@@ -337,9 +362,29 @@ const CabinSection = ({
               <React.Fragment key={groupIdx}>
                 {group.map((col, idx) => (
                   <div key={col} className="flex items-center gap-2" style={{ height: `${seatSize}px` }}>
-                    <span className="text-muted-foreground/40 w-8 flex-shrink-0 text-center text-[11px] font-bold select-none">
-                      {col}
-                    </span>
+                    <ContextMenu>
+                      <ContextMenuTrigger
+                        render={
+                          <div className="w-8 flex-shrink-0 flex items-center justify-center cursor-context-menu" />
+                        }
+                      >
+                        <span className="text-muted-foreground/40 text-[11px] font-bold select-none hover:text-blue-500 transition-colors">
+                          {col}
+                        </span>
+                      </ContextMenuTrigger>
+                      <ContextMenuContent>
+                        <ContextMenuItem
+                          onClick={() => {
+                            const colIndex = allLabels.indexOf(col);
+                            onRenameColumn(cabin.id, colIndex, col);
+                          }}
+                          className="gap-2"
+                        >
+                          <Settings2 className="h-4 w-4" />
+                          Rename Label
+                        </ContextMenuItem>
+                      </ContextMenuContent>
+                    </ContextMenu>
                     {rows.map((row) => {
                       const id = `${row}-${col}`;
                       const equipment = seatConfig[id];
@@ -413,13 +458,6 @@ const CabinSection = ({
           <Settings2 className="h-4 w-4" />
           Edit Cabin
         </ContextMenuItem>
-        <ContextMenuItem
-          onClick={() => onEditLabels(cabin.id)}
-          className="gap-2"
-        >
-          <Edit2 className="h-4 w-4" />
-          Edit Column Labels
-        </ContextMenuItem>
         <ContextMenuSeparator />
         <ContextMenuItem
           onClick={() => onDelete(cabin.id)}
@@ -466,16 +504,67 @@ export const AircraftSeatMap = ({
     });
     return map;
   }, {});
-  const [editingLabelsCabinId, setEditingLabelsCabinId] = useState<
-    string | null
-  >(null);
-  const [newLabels, setNewLabels] = useState("");
 
   const [lavSizeDialog, setLavSizeDialog] = useState<{
     id: string;
     size: number;
     maxSize: number;
   } | null>(null);
+
+  const [renamingColumn, setRenamingColumn] = useState<{
+    cabinId: string;
+    colIndex: number;
+    currentLabel: string;
+  } | null>(null);
+  const [newColLabel, setNewColLabel] = useState("");
+
+  const [renamingRow, setRenamingRow] = useState<{
+    cabinId: string;
+    rowIndex: number;
+    currentLabel: string;
+  } | null>(null);
+  const [newRowLabel, setNewRowLabel] = useState("");
+
+  const handleRenameColumn = () => {
+    if (renamingColumn && newColLabel.trim()) {
+      const cabin = cabins.find((c) => c.id === renamingColumn.cabinId);
+      if (cabin) {
+        const groups = cabin.seatFormat.split("-").map(Number);
+        const totalCols = groups.reduce((a, b) => a + b, 0);
+        const currentLabels =
+          cabin.customLabels && cabin.customLabels.length === totalCols
+            ? [...cabin.customLabels]
+            : Array.from({ length: totalCols }, (_, i) =>
+                String.fromCharCode(65 + i),
+              );
+
+        currentLabels[renamingColumn.colIndex] = newColLabel.trim();
+        onUpdateCabin(cabin.id, { customLabels: currentLabels });
+      }
+      setRenamingColumn(null);
+      setNewColLabel("");
+    }
+  };
+
+  const handleRenameRow = () => {
+    if (renamingRow && newRowLabel.trim()) {
+      const cabin = cabins.find((c) => c.id === renamingRow.cabinId);
+      if (cabin) {
+        const numRows = cabin.endRow - cabin.startRow + 1;
+        const currentLabels =
+          cabin.customRowLabels && cabin.customRowLabels.length === numRows
+            ? [...cabin.customRowLabels]
+            : Array.from({ length: numRows }, (_, i) =>
+                String(cabin.startRow + i).padStart(2, "0"),
+              );
+
+        currentLabels[renamingRow.rowIndex] = newRowLabel.trim();
+        onUpdateCabin(cabin.id, { customRowLabels: currentLabels });
+      }
+      setRenamingRow(null);
+      setNewRowLabel("");
+    }
+  };
 
   const handleCustomizeLavSize = (seatId: string) => {
     const [rowStr, col] = seatId.split("-");
@@ -572,29 +661,6 @@ export const AircraftSeatMap = ({
     }
   }, [editingCabin]);
 
-  const handleEditLabels = (id: string) => {
-    setEditingLabelsCabinId(id);
-    const cabin = cabins.find((c) => c.id === id);
-    if (cabin && cabin.customLabels) {
-      setNewLabels(cabin.customLabels.join(", "));
-    } else {
-      setNewLabels("");
-    }
-  };
-
-  const handleSaveLabels = () => {
-    if (editingLabelsCabinId) {
-      const labelsArray = newLabels
-        .split(",")
-        .map((l) => l.trim())
-        .filter((l) => l !== "");
-      onUpdateCabin(editingLabelsCabinId, {
-        customLabels: labelsArray.length > 0 ? labelsArray : undefined,
-      });
-      setEditingLabelsCabinId(null);
-    }
-  };
-
   const handleSaveCabinEdit = () => {
     if (editingCabin) {
       const result = cabinSchema.safeParse({
@@ -678,12 +744,19 @@ export const AircraftSeatMap = ({
                       cabin={cabin}
                       seatConfig={seatConfig}
                       onDelete={onDeleteCabin}
-                      onEditLabels={handleEditLabels}
                       onEditCabin={setEditingCabin}
                       onDeleteSeat={onDeleteSeat}
                       selectedSeats={selectedSeats}
                       seatZoneMap={seatZoneMap}
                       onCustomizeLavSize={handleCustomizeLavSize}
+                      onRenameColumn={(cabinId, colIndex, currentLabel) => {
+                        setRenamingColumn({ cabinId, colIndex, currentLabel });
+                        setNewColLabel(currentLabel);
+                      }}
+                      onRenameRow={(cabinId, rowIndex, currentLabel) => {
+                        setRenamingRow({ cabinId, rowIndex, currentLabel });
+                        setNewRowLabel(currentLabel);
+                      }}
                     />
                   </React.Fragment>
                 ))}
@@ -707,39 +780,75 @@ export const AircraftSeatMap = ({
       </div>
 
       <Dialog
-        open={!!editingLabelsCabinId}
-        onOpenChange={() => setEditingLabelsCabinId(null)}
+        open={!!renamingColumn}
+        onOpenChange={(open) => !open && setRenamingColumn(null)}
       >
         <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
-            <DialogTitle>Edit Column Labels</DialogTitle>
+            <DialogTitle>Rename Column Label</DialogTitle>
+            <DialogDescription>
+              Enter a new label for this column.
+            </DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
             <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="labels" className="text-right">
-                Labels
+              <Label htmlFor="col-label" className="text-right">
+                Label
               </Label>
               <Input
-                id="labels"
-                value={newLabels}
-                onChange={(e) => setNewLabels(e.target.value)}
-                placeholder="e.g. A, B, C, D"
+                id="col-label"
+                value={newColLabel}
+                onChange={(e) => setNewColLabel(e.target.value)}
                 className="col-span-3"
+                autoFocus
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") handleRenameColumn();
+                }}
               />
             </div>
-            <p className="text-muted-foreground px-4 text-xs">
-              Enter labels separated by commas. Leave empty to use default A, B,
-              C...
-            </p>
           </div>
           <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => setEditingLabelsCabinId(null)}
-            >
+            <Button variant="outline" onClick={() => setRenamingColumn(null)}>
               Cancel
             </Button>
-            <Button onClick={handleSaveLabels}>Save</Button>
+            <Button onClick={handleRenameColumn}>Save</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
+        open={!!renamingRow}
+        onOpenChange={(open) => !open && setRenamingRow(null)}
+      >
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Rename Row Label</DialogTitle>
+            <DialogDescription>
+              Enter a new label for this row.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="row-label" className="text-right">
+                Label
+              </Label>
+              <Input
+                id="row-label"
+                value={newRowLabel}
+                onChange={(e) => setNewRowLabel(e.target.value)}
+                className="col-span-3"
+                autoFocus
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") handleRenameRow();
+                }}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setRenamingRow(null)}>
+              Cancel
+            </Button>
+            <Button onClick={handleRenameRow}>Save</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

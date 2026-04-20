@@ -18,6 +18,7 @@ export interface CabinConfig {
   seatFormat: string; // e.g., "2-2-2", "3-3", "2-4-2"
   seatSize: "lg" | "md" | "sm";
   customLabels?: string[];
+  customRowLabels?: string[];
 }
 
 export interface ZoneConfig {
