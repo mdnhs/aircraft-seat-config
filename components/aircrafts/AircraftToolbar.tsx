@@ -1,6 +1,4 @@
-import React, { useState } from "react";
-import { Layout, Layers, Wind, ArrowRightLeft } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { useState } from "react";
 
 const tabs = [
   {
@@ -79,16 +77,16 @@ const tabs = [
 export const AircraftToolbar = () => {
   const [active, setActive] = useState(0);
   return (
-    <div className="bg-white rounded-t-xl border border-gray-100 border-b-0 px-6 py-3 flex justify-between items-center">
-      <span className="text-[11px] font-bold text-muted-foreground uppercase tracking-widest">
+    <div className="flex items-center justify-between rounded-t-xl border border-b-0 border-gray-100 bg-white px-6 py-3">
+      <span className="text-muted-foreground text-[11px] font-bold tracking-widest uppercase">
         Aircraft Seat Configuration
       </span>
-      <div className="flex items-center gap-1 bg-white border border-gray-200 rounded-full px-1.5 py-1.5 w-fit">
+      <div className="flex w-fit items-center gap-1 rounded-full border border-gray-200 bg-white px-1.5 py-1.5">
         {tabs.map((tab, idx) => (
           <button
             key={tab.label}
             onClick={() => setActive(idx)}
-            className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-[11px] font-bold uppercase tracking-wide transition-colors ${
+            className={`flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-[11px] font-bold tracking-wide uppercase transition-colors ${
               active === idx
                 ? "bg-blue-50 text-blue-600"
                 : "text-gray-400 hover:bg-gray-100 hover:text-gray-700"

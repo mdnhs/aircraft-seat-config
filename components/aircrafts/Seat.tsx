@@ -1,6 +1,6 @@
 "use client";
-import React from "react";
 import { useDroppable } from "@dnd-kit/core";
+import React from "react";
 import { TOOLS } from "./constants";
 
 export const Seat = ({
@@ -30,24 +30,23 @@ export const Seat = ({
       ref={setNodeRef}
       data-key={id}
       style={style}
-      className={`border-2 rounded-lg flex items-center justify-center transition-all flex-shrink-0 relative seat-selectable
-        ${isOver ? "bg-accent border-primary scale-110 shadow-md z-20" : "bg-background border-border"}
-        ${selected ? "ring-2 ring-blue-500 ring-offset-2 border-blue-500 bg-blue-50" : ""}
-        ${equipment ? "bg-primary/5 border-primary/30" : ""}
-        ${className || ""}
-      `}
+      className={`seat-selectable relative flex flex-shrink-0 items-center justify-center rounded-lg border-2 transition-all ${isOver ? "bg-accent border-primary z-20 scale-110 shadow-md" : "bg-background border-border"} ${selected ? "border-blue-500 bg-blue-50 ring-2 ring-blue-500 ring-offset-2" : ""} ${equipment ? "bg-primary/5 border-primary/30" : ""} ${className || ""} `}
     >
       {equipment ? (
-        <div className={`animate-in fade-in zoom-in duration-200 ${selected ? "text-blue-600" : "text-primary"}`}>
+        <div
+          className={`animate-in fade-in zoom-in duration-200 ${selected ? "text-blue-600" : "text-primary"}`}
+        >
           {getToolIcon(equipment)}
         </div>
       ) : (
-        <div className={`w-full h-full rounded-md transition-colors ${selected ? "bg-blue-200/50" : "bg-muted/10 group-hover:bg-muted/20"}`} />
+        <div
+          className={`h-full w-full rounded-md transition-colors ${selected ? "bg-blue-200/50" : "bg-muted/10 group-hover:bg-muted/20"}`}
+        />
       )}
 
       {/* Drop indicator overlay for better visual feedback */}
       {isOver && (
-        <div className="absolute inset-0 bg-primary/10 rounded-lg pointer-events-none border border-primary/20 animate-pulse" />
+        <div className="bg-primary/10 border-primary/20 pointer-events-none absolute inset-0 animate-pulse rounded-lg border" />
       )}
     </div>
   );

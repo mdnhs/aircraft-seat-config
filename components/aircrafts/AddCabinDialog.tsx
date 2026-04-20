@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
@@ -10,7 +10,6 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -20,8 +19,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { CabinConfig } from "./types";
 import { Plus } from "lucide-react";
+import React, { useState } from "react";
+import { CabinConfig } from "./types";
 
 interface AddCabinDialogProps {
   onAddCabin: (cabin: CabinConfig) => void;
@@ -42,7 +42,12 @@ export function AddCabinDialog({ onAddCabin, trigger }: AddCabinDialogProps) {
       startRow: parseInt(rowFrom),
       endRow: parseInt(rowTo),
       seatFormat: seatFormat,
-      seatSize: cabinType === "Business" ? "lg" : cabinType === "Premium Economy" ? "md" : "sm",
+      seatSize:
+        cabinType === "Business"
+          ? "lg"
+          : cabinType === "Premium Economy"
+            ? "md"
+            : "sm",
     };
     onAddCabin(newCabin);
     setOpen(false);
@@ -64,7 +69,7 @@ export function AddCabinDialog({ onAddCabin, trigger }: AddCabinDialogProps) {
           }
           return (
             <Button variant="outline" size="sm" className="gap-2" {...props}>
-              <Plus className="w-4 h-4" />
+              <Plus className="h-4 w-4" />
               Add Cabin
             </Button>
           );
@@ -89,7 +94,9 @@ export function AddCabinDialog({ onAddCabin, trigger }: AddCabinDialogProps) {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="Business">Business</SelectItem>
-                  <SelectItem value="Premium Economy">Premium Economy</SelectItem>
+                  <SelectItem value="Premium Economy">
+                    Premium Economy
+                  </SelectItem>
                   <SelectItem value="Economy">Economy</SelectItem>
                 </SelectContent>
               </Select>

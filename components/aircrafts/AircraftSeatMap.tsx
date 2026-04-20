@@ -1,31 +1,23 @@
 "use client";
-import React, { useState, useEffect, useRef } from "react";
-import { Plus, Trash2, Edit2, Settings2 } from "lucide-react";
-import Selection from "@viselect/vanilla";
-import { Seat } from "./Seat";
-import { DraggableTool } from "./DraggableTool";
-import { TOOLS } from "./constants";
-import { SeatConfig, CabinConfig } from "./types";
-import { AddCabinDialog } from "./AddCabinDialog";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
 import {
   ContextMenu,
   ContextMenuContent,
   ContextMenuItem,
-  ContextMenuTrigger,
   ContextMenuSeparator,
+  ContextMenuTrigger,
 } from "@/components/ui/context-menu";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogFooter,
-  DialogDescription,
 } from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent } from "@/components/ui/card";
 import {
   Select,
   SelectContent,
@@ -33,14 +25,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-
-// ─── Constants ───────────────────────────────────────────────────────────────
-
-const SEAT_SIZES = {
-  lg: { seat: "w-9 h-9", headrest: "h-2 top-1.5" },
-  md: { seat: "w-8 h-8", headrest: "h-[6px] top-1.5" },
-  sm: { seat: "w-7 h-7", headrest: "h-[5px] top-1" },
-};
+import Selection from "@viselect/vanilla";
+import { Edit2, Plus, Settings2, Trash2 } from "lucide-react";
+import React, { useEffect, useRef, useState } from "react";
+import { AddCabinDialog } from "./AddCabinDialog";
+import { DraggableTool } from "./DraggableTool";
+import { Seat } from "./Seat";
+import { TOOLS } from "./constants";
+import { CabinConfig, SeatConfig } from "./types";
 
 // ─── SeatCell ─────────────────────────────────────────────────────────────────
 
@@ -64,7 +56,7 @@ const SeatCell = ({
   const borderRadius = Math.max(4, Math.floor(size * 0.18));
   return (
     <div
-      className="transition-transform group"
+      className="group transition-transform"
       style={{ borderRadius: `${borderRadius}px` }}
     >
       <Seat
@@ -153,19 +145,19 @@ const CabinSection = ({
     <ContextMenu>
       <ContextMenuTrigger
         render={
-          <div className="flex items-stretch gap-3 group/cabin h-[400px]" />
+          <div className="group/cabin flex h-[400px] items-stretch gap-3" />
         }
       >
-        <div className="w-8 flex items-center justify-center border-l-2 border-border/30 rounded-l-xl bg-muted/10 transition-colors group-hover/cabin:bg-muted/20">
+        <div className="border-border/30 bg-muted/10 group-hover/cabin:bg-muted/20 flex w-8 items-center justify-center rounded-l-xl border-l-2 transition-colors">
           <span
-            className="text-[10px] font-black tracking-[0.4em] uppercase text-muted-foreground/30 select-none whitespace-nowrap"
+            className="text-muted-foreground/30 text-[10px] font-black tracking-[0.4em] whitespace-nowrap uppercase select-none"
             style={{ writingMode: "vertical-lr", transform: "rotate(180deg)" }}
           >
             {cabin.label}
           </span>
         </div>
 
-        <div className="border border-border/60 rounded-3xl p-6 bg-background shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)] transition-shadow hover:shadow-[0_8px_30px_-4px_rgba(0,0,0,0.08)] flex flex-col justify-center">
+        <div className="border-border/60 bg-background flex flex-col justify-center rounded-3xl border p-6 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)] transition-shadow hover:shadow-[0_8px_30px_-4px_rgba(0,0,0,0.08)]">
           <div className="flex flex-col" style={{ gap: `${verticalGap}px` }}>
             <div
               className="flex items-center gap-2"
@@ -176,7 +168,7 @@ const CabinSection = ({
                 <span
                   key={row}
                   style={{ width: `${seatSize + 8}px` }}
-                  className="text-[10px] font-bold text-muted-foreground/40 text-center select-none flex-shrink-0"
+                  className="text-muted-foreground/40 flex-shrink-0 text-center text-[10px] font-bold select-none"
                 >
                   {String(row).padStart(2, "0")}
                 </span>
@@ -187,7 +179,7 @@ const CabinSection = ({
               <React.Fragment key={groupIdx}>
                 {group.map((col) => (
                   <div key={col} className="flex items-center gap-2">
-                    <span className="text-[11px] font-bold text-muted-foreground/40 w-8 text-center select-none flex-shrink-0">
+                    <span className="text-muted-foreground/40 w-8 flex-shrink-0 text-center text-[11px] font-bold select-none">
                       {col}
                     </span>
                     {rows.map((row) => {
@@ -196,7 +188,7 @@ const CabinSection = ({
                         <div
                           key={id}
                           style={{ width: `${seatSize + 8}px` }}
-                          className="flex justify-center flex-shrink-0"
+                          className="flex flex-shrink-0 justify-center"
                         >
                           <SeatCell
                             id={id}
@@ -216,7 +208,7 @@ const CabinSection = ({
                     className="flex items-center px-8"
                     style={{ height: `${spacerHeight}px` }}
                   >
-                    <div className="w-full h-px bg-muted/30 border-t border-dashed border-muted/50" />
+                    <div className="bg-muted/30 border-muted/50 h-px w-full border-t border-dashed" />
                   </div>
                 )}
               </React.Fragment>
@@ -226,22 +218,22 @@ const CabinSection = ({
       </ContextMenuTrigger>
       <ContextMenuContent className="w-48">
         <ContextMenuItem onClick={() => onEditCabin(cabin)} className="gap-2">
-          <Settings2 className="w-4 h-4" />
+          <Settings2 className="h-4 w-4" />
           Edit Cabin
         </ContextMenuItem>
         <ContextMenuItem
           onClick={() => onEditLabels(cabin.id)}
           className="gap-2"
         >
-          <Edit2 className="w-4 h-4" />
+          <Edit2 className="h-4 w-4" />
           Edit Column Labels
         </ContextMenuItem>
         <ContextMenuSeparator />
         <ContextMenuItem
           onClick={() => onDelete(cabin.id)}
-          className="gap-2 text-destructive focus:text-destructive"
+          className="text-destructive focus:text-destructive gap-2"
         >
-          <Trash2 className="w-4 h-4" />
+          <Trash2 className="h-4 w-4" />
           Delete Cabin
         </ContextMenuItem>
       </ContextMenuContent>
@@ -398,8 +390,8 @@ export const AircraftSeatMap = ({
   };
 
   return (
-    <div className="flex bg-background rounded-b-xl border border-border shadow-sm min-h-[600px] overflow-hidden">
-      <div className="w-20 border-r border-border p-3 bg-muted/30 flex flex-col gap-2 z-10 shadow-[4px_0_10px_-4px_rgba(0,0,0,0.05)]">
+    <div className="bg-background border-border flex min-h-[600px] overflow-hidden rounded-b-xl border shadow-sm">
+      <div className="border-border bg-muted/30 z-10 flex w-20 flex-col gap-2 border-r p-3 shadow-[4px_0_10px_-4px_rgba(0,0,0,0.05)]">
         {TOOLS.map((tool) => (
           <DraggableTool key={tool.id} tool={tool} />
         ))}
@@ -407,11 +399,11 @@ export const AircraftSeatMap = ({
 
       <div
         ref={containerRef}
-        className="flex-1 overflow-auto bg-muted/5 p-12 relative scrollbar-thin scrollbar-thumb-muted-foreground/10 selection-boundary select-none"
+        className="bg-muted/5 scrollbar-thin scrollbar-thumb-muted-foreground/10 selection-boundary relative flex-1 overflow-auto p-12 select-none"
       >
-        <Card className="w-fit max-w-full bg-background border-border/50 shadow-lg rounded-[2.5rem] overflow-hidden">
-          <CardContent className="p-3">
-            <div className="flex items-center gap-8 overflow-x-auto scrollbar-thin scrollbar-thumb-muted-foreground/10">
+        <Card className="bg-background border-border/50 w-fit max-w-full overflow-hidden rounded-[2.5rem] shadow-lg">
+          <CardContent className="flex min-h-106 min-w-150 items-center justify-center p-3">
+            <div className="scrollbar-thin scrollbar-thumb-muted-foreground/10 flex items-center gap-8 overflow-x-auto">
               {cabins.map((cabin) => (
                 <CabinSection
                   key={cabin.id}
@@ -428,8 +420,8 @@ export const AircraftSeatMap = ({
                 <AddCabinDialog
                   onAddCabin={onAddCabin}
                   trigger={
-                    <div className="h-10 w-10 flex items-center justify-center border-2 border-border rounded-xl text-muted-foreground hover:border-blue-400 hover:text-blue-500 transition-all hover:bg-blue-50/50 cursor-pointer group shadow-sm hover:shadow-md">
-                      <Plus className="w-6 h-6 group-hover:scale-110 transition-transform" />
+                    <div className="border-border text-muted-foreground group flex h-10 w-10 cursor-pointer items-center justify-center rounded-xl border-2 shadow-sm transition-all hover:border-blue-400 hover:bg-blue-50/50 hover:text-blue-500 hover:shadow-md">
+                      <Plus className="h-6 w-6 transition-transform group-hover:scale-110" />
                     </div>
                   }
                 />
@@ -461,7 +453,7 @@ export const AircraftSeatMap = ({
                 className="col-span-3"
               />
             </div>
-            <p className="text-xs text-muted-foreground px-4">
+            <p className="text-muted-foreground px-4 text-xs">
               Enter labels separated by commas. Leave empty to use default A, B,
               C...
             </p>

@@ -1,22 +1,22 @@
 "use client";
-import React, { useEffect, useState } from "react";
+import { TooltipProvider } from "@/components/ui/tooltip";
 import {
   DndContext,
+  DragEndEvent,
+  DragOverlay,
+  DragStartEvent,
   PointerSensor,
+  rectIntersection,
   useSensor,
   useSensors,
-  DragEndEvent,
-  DragStartEvent,
-  DragOverlay,
-  rectIntersection,
 } from "@dnd-kit/core";
-import { TOTAL_SEATS, TOOLS } from "./constants";
-import { SeatConfig, CabinConfig } from "./types";
+import { parseAsArrayOf, parseAsJson, useQueryState } from "nuqs";
+import React, { useEffect, useState } from "react";
 import { AircraftHeader } from "./AircraftHeader";
-import { AircraftToolbar } from "./AircraftToolbar";
 import { AircraftSeatMap } from "./AircraftSeatMap";
-import { TooltipProvider } from "@/components/ui/tooltip";
-import { useQueryState, parseAsJson, parseAsArrayOf } from "nuqs";
+import { AircraftToolbar } from "./AircraftToolbar";
+import { TOOLS, TOTAL_SEATS } from "./constants";
+import { CabinConfig, SeatConfig } from "./types";
 
 const INITIAL_CABINS: CabinConfig[] = [];
 
@@ -86,7 +86,7 @@ export default function AircraftConfig() {
 
   if (!mounted) {
     return (
-      <div className="min-h-screen bg-muted/50 p-6 font-sans text-slate-800 opacity-0 transition-opacity duration-300" />
+      <div className="bg-muted/50 min-h-screen p-6 font-sans text-slate-800 opacity-0 transition-opacity duration-300" />
     );
   }
 
@@ -110,7 +110,7 @@ export default function AircraftConfig() {
 
   return (
     <TooltipProvider>
-      <div className="min-h-screen bg-muted/50 p-6 font-sans text-slate-800">
+      <div className="bg-muted/50 min-h-screen p-6 font-sans text-slate-800">
         <DndContext
           sensors={sensors}
           onDragStart={handleDragStart}
@@ -131,9 +131,9 @@ export default function AircraftConfig() {
 
           <DragOverlay dropAnimation={null} zIndex={1000}>
             {activeTool ? (
-              <div className="flex flex-col items-center justify-center p-2 bg-background border-2 border-primary rounded-md shadow-2xl cursor-grabbing w-16 h-16 opacity-90 scale-110 pointer-events-none">
+              <div className="bg-background border-primary pointer-events-none flex h-16 w-16 scale-110 cursor-grabbing flex-col items-center justify-center rounded-md border-2 p-2 opacity-90 shadow-2xl">
                 <div className="text-primary mb-1">{activeTool.icon}</div>
-                <span className="text-[9px] font-bold text-primary uppercase">
+                <span className="text-primary text-[9px] font-bold uppercase">
                   {activeTool.label}
                 </span>
               </div>
