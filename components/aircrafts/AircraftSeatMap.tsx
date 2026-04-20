@@ -33,6 +33,7 @@ import { DraggableTool } from "./DraggableTool";
 import { Seat } from "./Seat";
 import { TOOLS } from "./constants";
 import { CabinConfig, SeatConfig } from "./types";
+import Image from "next/image";
 
 // ─── SeatCell ─────────────────────────────────────────────────────────────────
 
@@ -390,7 +391,7 @@ export const AircraftSeatMap = ({
   };
 
   return (
-    <div className="bg-background border-border flex min-h-150 overflow-hidden rounded-b-xl border shadow-sm">
+    <div className="bg-background flex min-h-150 overflow-hidden">
       <div className="border-border bg-muted/30 z-10 flex w-20 flex-col gap-2 border-r p-3 shadow-[4px_0_10px_-4px_rgba(0,0,0,0.05)]">
         {TOOLS.map((tool) => (
           <DraggableTool key={tool.id} tool={tool} />
@@ -399,38 +400,52 @@ export const AircraftSeatMap = ({
 
       <div
         ref={containerRef}
-        className="bg-muted/5 scrollbar-thin scrollbar-thumb-muted-foreground/10 selection-boundary relative flex-1 overflow-auto p-12 select-none"
+        className="bg-muted/5 scrollbar-thin scrollbar-thumb-muted-foreground/10 selection-boundary flex flex-1 overflow-auto p-12 select-none"
       >
-        <Card className="bg-background border-border/50 w-fit max-w-full overflow-hidden rounded-[2.5rem] shadow-lg">
-          <CardContent
-            className={`min-h-106 min-w-150 ${cabins.length > 0 || "flex items-center justify-center"} p-3`}
+        <div className="flex h-114 items-stretch">
+          <div
+            className="relative shrink-0"
+            style={{ aspectRatio: "185 / 312" }}
           >
-            <div className="scrollbar-thin scrollbar-thumb-muted-foreground/10 flex items-center gap-8 overflow-x-auto">
-              {cabins.map((cabin) => (
-                <CabinSection
-                  key={cabin.id}
-                  cabin={cabin}
-                  seatConfig={seatConfig}
-                  onDelete={onDeleteCabin}
-                  onEditLabels={handleEditLabels}
-                  onEditCabin={setEditingCabin}
-                  selectedSeats={selectedSeats}
-                />
-              ))}
+            <Image
+              src="/head.svg"
+              alt="Aircraft Silhouette"
+              fill
+              priority
+              className="pointer-events-none select-none"
+            />
+          </div>
+          <Card className="bg-background -ml-px w-fit max-w-full overflow-hidden rounded-l-none rounded-r-[12px] border border-[#DCDCDC]">
+            <CardContent
+              className={`min-h-106 min-w-150 ${cabins.length > 0 || "flex items-center justify-center"} h-full p-3`}
+            >
+              <div className="scrollbar-thin scrollbar-thumb-muted-foreground/10 flex h-full items-center gap-8 overflow-x-auto">
+                {cabins.map((cabin) => (
+                  <CabinSection
+                    key={cabin.id}
+                    cabin={cabin}
+                    seatConfig={seatConfig}
+                    onDelete={onDeleteCabin}
+                    onEditLabels={handleEditLabels}
+                    onEditCabin={setEditingCabin}
+                    selectedSeats={selectedSeats}
+                  />
+                ))}
 
-              <div className="flex items-center">
-                <AddCabinDialog
-                  onAddCabin={onAddCabin}
-                  trigger={
-                    <div className="border-border text-muted-foreground group flex h-10 w-10 cursor-pointer items-center justify-center rounded-xl border-2 shadow-sm transition-all hover:border-blue-400 hover:bg-blue-50/50 hover:text-blue-500 hover:shadow-md">
-                      <Plus className="h-6 w-6 transition-transform group-hover:scale-110" />
-                    </div>
-                  }
-                />
+                <div className="flex items-center">
+                  <AddCabinDialog
+                    onAddCabin={onAddCabin}
+                    trigger={
+                      <div className="border-border text-muted-foreground group flex h-10 w-10 cursor-pointer items-center justify-center rounded-xl border-2 shadow-sm transition-all hover:border-blue-400 hover:bg-blue-50/50 hover:text-blue-500 hover:shadow-md">
+                        <Plus className="h-6 w-6 transition-transform group-hover:scale-110" />
+                      </div>
+                    }
+                  />
+                </div>
               </div>
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+        </div>
       </div>
 
       {/* ── Edit Column Labels Dialog ───────────────────────────────────── */}
