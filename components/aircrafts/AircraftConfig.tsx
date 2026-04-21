@@ -113,9 +113,9 @@ export default function AircraftConfig() {
     ).withDefault([]),
   );
   const [exitMode, setExitMode] = useState(false);
-  const [wings, setWings] = useQueryState<WingsConfig | null>(
+  const [wings, setWings] = useQueryState<WingsConfig>(
     "wings",
-    parseAsJson<WingsConfig | null>((v) => v as WingsConfig | null).withDefault(null),
+    parseAsJson<WingsConfig>((v) => v as WingsConfig),
   );
   const [showAddWingDialog, setShowAddWingDialog] = useState(false);
   const [showAddZoneDialog, setShowAddZoneDialog] = useState(false);

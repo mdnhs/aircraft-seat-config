@@ -174,7 +174,6 @@ interface CabinSectionProps {
   selectedSeats: string[];
   seatZoneMap: Record<string, { name: string; color: string }>;
   emergencyExits: EmergencyExitConfig[];
-  wings: WingsConfig | null;
   onDeleteEmergencyExit: (id: string) => void;
   onDelete: (id: string) => void;
   onEditCabin: (cabin: CabinConfig) => void;
@@ -729,8 +728,8 @@ const Wings = ({ wings, containerRef, cabins }: WingsProps) => {
         let maxBottom = -Infinity;
 
         const containerRect = containerRef.current!.getBoundingClientRect();
-
         const allEls = [...Array.from(fromEls), ...Array.from(toEls)];
+
         allEls.forEach((el) => {
           const rect = (el as HTMLElement).getBoundingClientRect();
           const relativeLeft =
@@ -746,11 +745,24 @@ const Wings = ({ wings, containerRef, cabins }: WingsProps) => {
           maxBottom = Math.max(maxBottom, relativeBottom);
         });
 
+        // Find the cabin container to get the vertical border
+        const seatEl = allEls[0] as HTMLElement;
+        const cabinEl = seatEl.closest(".rounded-3xl");
+
+        let cabinTop = minTop;
+        let cabinBottom = maxBottom;
+
+        if (cabinEl) {
+          const rect = cabinEl.getBoundingClientRect();
+          cabinTop = rect.top - containerRect.top;
+          cabinBottom = rect.bottom - containerRect.top;
+        }
+
         return {
           left: minLeft,
           width: maxRight - minLeft,
-          top: minTop,
-          bottom: maxBottom,
+          top: cabinTop,
+          bottom: cabinBottom,
         };
       };
 
@@ -783,9 +795,9 @@ const Wings = ({ wings, containerRef, cabins }: WingsProps) => {
           style={{
             left: `${positions.right.left}px`,
             width: `${positions.right.width}px`,
-            top: `${positions.right.top - wingHeight}px`,
+            top: `${Math.max(0, positions.right.top - wingHeight)}px`,
             height: `${wingHeight}px`,
-            zIndex: 20,
+            zIndex: 50,
             clipPath: "polygon(9.6% 0%, 100% 0%, 93.3% 100%, 0% 100%)",
           }}
         />
@@ -798,7 +810,7 @@ const Wings = ({ wings, containerRef, cabins }: WingsProps) => {
             width: `${positions.left.width}px`,
             top: `${positions.left.bottom}px`,
             height: `${wingHeight}px`,
-            zIndex: 20,
+            zIndex: 50,
             clipPath: "polygon(0% 0%, 93.3% 0%, 100% 100%, 9.6% 100%)",
           }}
         />
@@ -834,403 +846,6 @@ interface AircraftSeatMapProps {
   selectedSeats: string[];
   onSelectedSeatsChange: (seats: string[]) => void;
 }
-
-// ─── StandaloneLavSection ─────────────────────────────────────────────────────
-
-interface StandaloneLavSectionProps {
-  lav: LavSectionConfig;
-  onDelete: (id: string) => void;
-  onCustomizeSize: (id: string, currentSize: number) => void;
-  onSetAlignment: (id: string, alignment: LavAlignment) => void;
-}
-
-const StandaloneLavSection = ({
-  lav,
-  onDelete,
-  onCustomizeSize,
-  onSetAlignment,
-}: StandaloneLavSectionProps) => {
-  const cellSize = 40;
-  const gap = 6;
-  const blockHeight = cellSize * lav.size + gap * (lav.size - 1);
-  const alignment: LavAlignment = lav.alignment ?? "center";
-  const alignItemsClass =
-    alignment === "right"
-      ? "items-start"
-      : alignment === "left"
-        ? "items-end"
-        : "items-center";
-
-  return (
-    <ContextMenu>
-      <ContextMenuTrigger
-        render={
-          <div className={`group/lav flex h-[400px] ${alignItemsClass}`} />
-        }
-      >
-        <div className="border-border/60 bg-background flex flex-col items-center rounded-2xl border p-3 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)] transition-shadow hover:shadow-[0_8px_30px_-4px_rgba(0,0,0,0.08)]">
-          <div
-            className="bg-primary/5 border-primary/30 text-primary flex items-center justify-center rounded-lg border-2"
-            style={{ width: `${cellSize}px`, height: `${blockHeight}px` }}
-          >
-            <Toilet className="h-5 w-5" />
-          </div>
-          <span className="text-muted-foreground/60 mt-2 text-[9px] font-bold tracking-widest uppercase select-none">
-            LAV
-          </span>
-        </div>
-      </ContextMenuTrigger>
-      <ContextMenuContent>
-        <ContextMenuItem
-          onClick={() => onCustomizeSize(lav.id, lav.size)}
-          className="gap-2"
-        >
-          <Settings2 className="h-4 w-4" />
-          Customize Size
-        </ContextMenuItem>
-        <ContextMenuSub>
-          <ContextMenuSubTrigger className="gap-2">
-            <AlignCenter className="h-4 w-4" />
-            LAV Position
-          </ContextMenuSubTrigger>
-          <ContextMenuSubContent>
-            <ContextMenuItem
-              onClick={() => onSetAlignment(lav.id, "left")}
-              className="gap-2"
-            >
-              <AlignLeft className="h-4 w-4" />
-              Left
-              {alignment === "left" && (
-                <span className="text-muted-foreground ml-auto text-xs">✓</span>
-              )}
-            </ContextMenuItem>
-            <ContextMenuItem
-              onClick={() => onSetAlignment(lav.id, "center")}
-              className="gap-2"
-            >
-              <AlignCenter className="h-4 w-4" />
-              Center
-              {alignment === "center" && (
-                <span className="text-muted-foreground ml-auto text-xs">✓</span>
-              )}
-            </ContextMenuItem>
-            <ContextMenuItem
-              onClick={() => onSetAlignment(lav.id, "right")}
-              className="gap-2"
-            >
-              <AlignRight className="h-4 w-4" />
-              Right
-              {alignment === "right" && (
-                <span className="text-muted-foreground ml-auto text-xs">✓</span>
-              )}
-            </ContextMenuItem>
-          </ContextMenuSubContent>
-        </ContextMenuSub>
-        <ContextMenuSeparator />
-        <ContextMenuItem
-          onClick={() => onDelete(lav.id)}
-          className="text-destructive focus:text-destructive gap-2"
-        >
-          <Trash2 className="h-4 w-4" />
-          Delete LAV Section
-        </ContextMenuItem>
-      </ContextMenuContent>
-    </ContextMenu>
-  );
-};
-
-// ─── ExitIcon ─────────────────────────────────────────────────────────────────
-
-const ExitIcon = () => (
-  <div
-    className="flex items-center justify-center rounded-lg border-2 border-red-400 bg-white text-red-500"
-    style={{ width: 40, height: 40 }}
-  >
-    <DoorOpen className="h-5 w-5" />
-  </div>
-);
-
-// ─── ExitSlot ─────────────────────────────────────────────────────────────────
-// Renders 1 or 2 exits at the same position in a shared full-height column.
-
-interface ExitSlotProps {
-  exits: ExitSectionConfig[]; // 1 or 2 items
-  onDelete: (id: string) => void;
-  onSetAlignment: (id: string, alignment: ExitAlignment) => void;
-}
-
-const ExitSlot = ({ exits, onDelete, onSetAlignment }: ExitSlotProps) => {
-  const hasTop = exits.some((e) => (e.alignment ?? "right") === "right");
-  const hasBottom = exits.some((e) => (e.alignment ?? "right") === "left");
-  const topExit = exits.find((e) => (e.alignment ?? "right") === "right");
-  const bottomExit = exits.find((e) => (e.alignment ?? "right") === "left");
-
-  const renderExitBlock = (exit: ExitSectionConfig) => {
-    const alignment: ExitAlignment = exit.alignment ?? "right";
-    return (
-      <ContextMenu key={exit.id}>
-        <ContextMenuTrigger render={<div />}>
-          <div className="flex flex-col items-center rounded-2xl border-2 border-red-300 bg-red-50/60 p-3 shadow-[0_4px_20px_-4px_rgba(239,68,68,0.15)] transition-shadow hover:shadow-[0_8px_30px_-4px_rgba(239,68,68,0.2)]">
-            <ExitIcon />
-            <span className="mt-2 text-[9px] font-bold tracking-widest text-red-500 uppercase select-none">
-              EXIT
-            </span>
-          </div>
-        </ContextMenuTrigger>
-        <ContextMenuContent>
-          <ContextMenuSub>
-            <ContextMenuSubTrigger className="gap-2">
-              <AlignCenter className="h-4 w-4" />
-              Exit Position
-            </ContextMenuSubTrigger>
-            <ContextMenuSubContent>
-              <ContextMenuItem
-                onClick={() => onSetAlignment(exit.id, "left")}
-                className="gap-2"
-                disabled={hasBottom && alignment === "right"}
-              >
-                <AlignLeft className="h-4 w-4" />
-                Left
-                {alignment === "left" && (
-                  <span className="text-muted-foreground ml-auto text-xs">
-                    ✓
-                  </span>
-                )}
-              </ContextMenuItem>
-              <ContextMenuItem
-                onClick={() => onSetAlignment(exit.id, "right")}
-                className="gap-2"
-                disabled={hasTop && alignment === "left"}
-              >
-                <AlignRight className="h-4 w-4" />
-                Right
-                {alignment === "right" && (
-                  <span className="text-muted-foreground ml-auto text-xs">
-                    ✓
-                  </span>
-                )}
-              </ContextMenuItem>
-            </ContextMenuSubContent>
-          </ContextMenuSub>
-          <ContextMenuSeparator />
-          <ContextMenuItem
-            onClick={() => onDelete(exit.id)}
-            className="text-destructive focus:text-destructive gap-2"
-          >
-            <Trash2 className="h-4 w-4" />
-            Delete Exit
-          </ContextMenuItem>
-        </ContextMenuContent>
-      </ContextMenu>
-    );
-  };
-
-  return (
-    <div className="flex h-[400px] flex-col justify-between py-3">
-      {hasTop && topExit ? (
-        renderExitBlock(topExit)
-      ) : (
-        <div style={{ width: 40, height: 40 }} />
-      )}
-      {hasBottom && bottomExit ? (
-        renderExitBlock(bottomExit)
-      ) : (
-        <div style={{ width: 40, height: 40 }} />
-      )}
-    </div>
-  );
-};
-
-// ─── LavSlot ──────────────────────────────────────────────────────────────────
-// Renders 1 or 2 LAV sections at the same position.
-// With 2 LAVs: shared column, right=top, left=bottom.
-
-interface LavSlotProps {
-  lavs: LavSectionConfig[];
-  onDelete: (id: string) => void;
-  onCustomizeSize: (id: string, currentSize: number) => void;
-  onSetAlignment: (id: string, alignment: LavAlignment) => void;
-  onOpenSizeDialog: (id: string, size: number) => void;
-}
-
-const LavSlot = ({
-  lavs,
-  onDelete,
-  onSetAlignment,
-  onOpenSizeDialog,
-}: LavSlotProps) => {
-  if (lavs.length === 1) {
-    const lav = lavs[0];
-    return (
-      <StandaloneLavSection
-        lav={lav}
-        onDelete={onDelete}
-        onCustomizeSize={(id, size) => onOpenSizeDialog(id, size)}
-        onSetAlignment={onSetAlignment}
-      />
-    );
-  }
-
-  const topLav = lavs.find((l) => (l.alignment ?? "center") === "right");
-  const bottomLav = lavs.find((l) => (l.alignment ?? "center") === "left");
-  const hasTop = !!topLav;
-  const hasBottom = !!bottomLav;
-
-  const renderLavBlock = (lav: LavSectionConfig) => {
-    const cellSize = 40;
-    const gap = 6;
-    const blockHeight = cellSize * lav.size + gap * (lav.size - 1);
-    const alignment: LavAlignment = lav.alignment ?? "center";
-
-    return (
-      <ContextMenu key={lav.id}>
-        <ContextMenuTrigger render={<div />}>
-          <div className="border-border/60 bg-background flex flex-col items-center rounded-2xl border p-3 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)] transition-shadow hover:shadow-[0_8px_30px_-4px_rgba(0,0,0,0.08)]">
-            <div
-              className="bg-primary/5 border-primary/30 text-primary flex items-center justify-center rounded-lg border-2"
-              style={{ width: `${cellSize}px`, height: `${blockHeight}px` }}
-            >
-              <Toilet className="h-5 w-5" />
-            </div>
-            <span className="text-muted-foreground/60 mt-2 text-[9px] font-bold tracking-widest uppercase select-none">
-              LAV
-            </span>
-          </div>
-        </ContextMenuTrigger>
-        <ContextMenuContent>
-          <ContextMenuItem
-            onClick={() => onOpenSizeDialog(lav.id, lav.size)}
-            className="gap-2"
-          >
-            <Settings2 className="h-4 w-4" />
-            Customize Size
-          </ContextMenuItem>
-          <ContextMenuSub>
-            <ContextMenuSubTrigger className="gap-2">
-              <AlignCenter className="h-4 w-4" />
-              LAV Position
-            </ContextMenuSubTrigger>
-            <ContextMenuSubContent>
-              <ContextMenuItem
-                onClick={() => onSetAlignment(lav.id, "left")}
-                className="gap-2"
-                disabled={hasBottom && alignment === "right"}
-              >
-                <AlignLeft className="h-4 w-4" />
-                Left
-                {alignment === "left" && (
-                  <span className="text-muted-foreground ml-auto text-xs">
-                    ✓
-                  </span>
-                )}
-              </ContextMenuItem>
-              <ContextMenuItem
-                onClick={() => onSetAlignment(lav.id, "right")}
-                className="gap-2"
-                disabled={hasTop && alignment === "left"}
-              >
-                <AlignRight className="h-4 w-4" />
-                Right
-                {alignment === "right" && (
-                  <span className="text-muted-foreground ml-auto text-xs">
-                    ✓
-                  </span>
-                )}
-              </ContextMenuItem>
-            </ContextMenuSubContent>
-          </ContextMenuSub>
-          <ContextMenuSeparator />
-          <ContextMenuItem
-            onClick={() => onDelete(lav.id)}
-            className="text-destructive focus:text-destructive gap-2"
-          >
-            <Trash2 className="h-4 w-4" />
-            Delete LAV Section
-          </ContextMenuItem>
-        </ContextMenuContent>
-      </ContextMenu>
-    );
-  };
-
-  return (
-    <div className="flex h-[400px] flex-col justify-between py-3">
-      {hasTop && topLav ? (
-        renderLavBlock(topLav)
-      ) : (
-        <div style={{ width: 40, height: 40 }} />
-      )}
-      {hasBottom && bottomLav ? (
-        renderLavBlock(bottomLav)
-      ) : (
-        <div style={{ width: 40, height: 40 }} />
-      )}
-    </div>
-  );
-};
-
-// ─── SlotInserter ─────────────────────────────────────────────────────────────
-
-interface SlotInserterProps {
-  position: number;
-  cabins: CabinConfig[];
-  onAddCabin: (cabin: CabinConfig) => void;
-  onAddLavSection: (lav: LavSectionConfig, position: number) => void;
-  lavCountAtPosition: number;
-  exitMode: boolean;
-  exitCountAtPosition: number;
-  onAddExitSection: (position: number) => void;
-}
-
-const SlotInserter = ({
-  position,
-  cabins,
-  onAddCabin,
-  onAddLavSection,
-  lavCountAtPosition,
-  exitMode,
-  exitCountAtPosition,
-  onAddExitSection,
-}: SlotInserterProps) => (
-  <div className="flex flex-col items-center gap-2">
-    <AddCabinDialog
-      onAddCabin={onAddCabin}
-      index={position}
-      cabins={cabins}
-      trigger={
-        <div
-          title="Add Cabin"
-          className="border-border text-muted-foreground group flex h-10 w-10 cursor-pointer items-center justify-center rounded-xl border-2 shadow-sm transition-all hover:border-blue-400 hover:bg-blue-50/50 hover:text-blue-500 hover:shadow-md"
-        >
-          <Plus className="h-6 w-6 transition-transform group-hover:scale-110" />
-        </div>
-      }
-    />
-    {lavCountAtPosition < 2 && (
-      <AddLavSectionDialog
-        onAddLavSection={onAddLavSection}
-        position={position}
-        trigger={
-          <div
-            title="Add LAV"
-            className="border-border text-muted-foreground group flex h-10 w-10 cursor-pointer items-center justify-center rounded-xl border-2 shadow-sm transition-all hover:border-emerald-400 hover:bg-emerald-50/50 hover:text-emerald-500 hover:shadow-md"
-          >
-            <Toilet className="h-5 w-5 transition-transform group-hover:scale-110" />
-          </div>
-        }
-      />
-    )}
-    {exitMode && exitCountAtPosition < 2 && (
-      <button
-        type="button"
-        title="Add Exit"
-        onClick={() => onAddExitSection(position)}
-        className="group flex h-10 w-10 cursor-pointer items-center justify-center rounded-xl border-2 border-red-300 bg-red-50/40 text-red-500 shadow-sm transition-all hover:border-red-400 hover:bg-red-50 hover:text-red-600 hover:shadow-md"
-      >
-        <DoorOpen className="h-5 w-5 transition-transform group-hover:scale-110" />
-      </button>
-    )}
-  </div>
-);
 
 export const AircraftSeatMap = ({
   seatConfig,
@@ -1464,6 +1079,379 @@ export const AircraftSeatMap = ({
     }
   };
 
+  const StandaloneLavSection = ({
+    lav,
+    onDelete,
+    onCustomizeSize,
+    onSetAlignment,
+  }: {
+    lav: LavSectionConfig;
+    onDelete: (id: string) => void;
+    onCustomizeSize: (id: string, currentSize: number) => void;
+    onSetAlignment: (id: string, alignment: LavAlignment) => void;
+  }) => {
+    const cellSize = 40;
+    const gap = 6;
+    const blockHeight = cellSize * lav.size + gap * (lav.size - 1);
+    const alignment: LavAlignment = lav.alignment ?? "center";
+    const alignItemsClass =
+      alignment === "right"
+        ? "items-start"
+        : alignment === "left"
+          ? "items-end"
+          : "items-center";
+
+    return (
+      <ContextMenu>
+        <ContextMenuTrigger
+          render={<div className={`group/lav flex h-100 ${alignItemsClass}`} />}
+        >
+          <div
+            className="bg-primary/5 border-primary/30 text-primary flex items-center justify-center rounded-lg border-2"
+            style={{ width: `${cellSize}px`, height: `${blockHeight}px` }}
+          >
+            <Toilet className="h-5 w-5" />
+          </div>
+        </ContextMenuTrigger>
+        <ContextMenuContent>
+          <ContextMenuItem
+            onClick={() => onCustomizeSize(lav.id, lav.size)}
+            className="gap-2"
+          >
+            <Settings2 className="h-4 w-4" />
+            Customize Size
+          </ContextMenuItem>
+          <ContextMenuSub>
+            <ContextMenuSubTrigger className="gap-2">
+              <AlignCenter className="h-4 w-4" />
+              LAV Position
+            </ContextMenuSubTrigger>
+            <ContextMenuSubContent>
+              <ContextMenuItem
+                onClick={() => onSetAlignment(lav.id, "left")}
+                className="gap-2"
+              >
+                <AlignLeft className="h-4 w-4" />
+                Left
+                {alignment === "left" && (
+                  <span className="text-muted-foreground ml-auto text-xs">
+                    ✓
+                  </span>
+                )}
+              </ContextMenuItem>
+              <ContextMenuItem
+                onClick={() => onSetAlignment(lav.id, "center")}
+                className="gap-2"
+              >
+                <AlignCenter className="h-4 w-4" />
+                Center
+                {alignment === "center" && (
+                  <span className="text-muted-foreground ml-auto text-xs">
+                    ✓
+                  </span>
+                )}
+              </ContextMenuItem>
+              <ContextMenuItem
+                onClick={() => onSetAlignment(lav.id, "right")}
+                className="gap-2"
+              >
+                <AlignRight className="h-4 w-4" />
+                Right
+                {alignment === "right" && (
+                  <span className="text-muted-foreground ml-auto text-xs">
+                    ✓
+                  </span>
+                )}
+              </ContextMenuItem>
+            </ContextMenuSubContent>
+          </ContextMenuSub>
+          <ContextMenuSeparator />
+          <ContextMenuItem
+            onClick={() => onDelete(lav.id)}
+            className="text-destructive focus:text-destructive gap-2"
+          >
+            <Trash2 className="h-4 w-4" />
+            Delete LAV Section
+          </ContextMenuItem>
+        </ContextMenuContent>
+      </ContextMenu>
+    );
+  };
+
+  const ExitIcon = () => (
+    <div
+      className="flex items-center justify-center rounded-lg border-2 border-red-400 bg-white text-red-500"
+      style={{ width: 40, height: 40 }}
+    >
+      <DoorOpen className="h-5 w-5" />
+    </div>
+  );
+
+  const ExitSlot = ({
+    exits,
+    onDelete,
+    onSetAlignment,
+  }: {
+    exits: ExitSectionConfig[];
+    onDelete: (id: string) => void;
+    onSetAlignment: (id: string, alignment: ExitAlignment) => void;
+  }) => {
+    const hasTop = exits.some((e) => (e.alignment ?? "right") === "right");
+    const hasBottom = exits.some((e) => (e.alignment ?? "right") === "left");
+    const topExit = exits.find((e) => (e.alignment ?? "right") === "right");
+    const bottomExit = exits.find((e) => (e.alignment ?? "right") === "left");
+
+    const renderExitBlock = (exit: ExitSectionConfig) => {
+      const alignment: ExitAlignment = exit.alignment ?? "right";
+      return (
+        <ContextMenu key={exit.id}>
+          <ContextMenuTrigger render={<div />}>
+            <div className="flex flex-col items-center rounded-2xl border-2 border-red-300 bg-red-50/60 p-3 shadow-[0_4px_20px_-4px_rgba(239,68,68,0.15)] transition-shadow hover:shadow-[0_8px_30px_-4px_rgba(239,68,68,0.2)]">
+              <ExitIcon />
+              <span className="mt-2 text-[9px] font-bold tracking-widest text-red-500 uppercase select-none">
+                EXIT
+              </span>
+            </div>
+          </ContextMenuTrigger>
+          <ContextMenuContent>
+            <ContextMenuSub>
+              <ContextMenuSubTrigger className="gap-2">
+                <AlignCenter className="h-4 w-4" />
+                Exit Position
+              </ContextMenuSubTrigger>
+              <ContextMenuSubContent>
+                <ContextMenuItem
+                  onClick={() => onSetAlignment(exit.id, "left")}
+                  className="gap-2"
+                  disabled={hasBottom && alignment === "right"}
+                >
+                  <AlignLeft className="h-4 w-4" />
+                  Left
+                  {alignment === "left" && (
+                    <span className="text-muted-foreground ml-auto text-xs">
+                      ✓
+                    </span>
+                  )}
+                </ContextMenuItem>
+                <ContextMenuItem
+                  onClick={() => onSetAlignment(exit.id, "right")}
+                  className="gap-2"
+                  disabled={hasTop && alignment === "left"}
+                >
+                  <AlignRight className="h-4 w-4" />
+                  Right
+                  {alignment === "right" && (
+                    <span className="text-muted-foreground ml-auto text-xs">
+                      ✓
+                    </span>
+                  )}
+                </ContextMenuItem>
+              </ContextMenuSubContent>
+            </ContextMenuSub>
+            <ContextMenuSeparator />
+            <ContextMenuItem
+              onClick={() => onDelete(exit.id)}
+              className="text-destructive focus:text-destructive gap-2"
+            >
+              <Trash2 className="h-4 w-4" />
+              Delete Exit
+            </ContextMenuItem>
+          </ContextMenuContent>
+        </ContextMenu>
+      );
+    };
+
+    return (
+      <div className="flex h-[400px] flex-col justify-between">
+        {hasTop && topExit ? (
+          renderExitBlock(topExit)
+        ) : (
+          <div style={{ width: 40, height: 40 }} />
+        )}
+        {hasBottom && bottomExit ? (
+          renderExitBlock(bottomExit)
+        ) : (
+          <div style={{ width: 40, height: 40 }} />
+        )}
+      </div>
+    );
+  };
+
+  const LavSlot = ({
+    lavs,
+    onDelete,
+    onSetAlignment,
+    onOpenSizeDialog,
+  }: {
+    lavs: LavSectionConfig[];
+    onDelete: (id: string) => void;
+    onSetAlignment: (id: string, alignment: LavAlignment) => void;
+    onOpenSizeDialog: (id: string, size: number) => void;
+  }) => {
+    if (lavs.length === 1) {
+      const lav = lavs[0];
+      return (
+        <StandaloneLavSection
+          lav={lav}
+          onDelete={onDelete}
+          onCustomizeSize={(id, size) => onOpenSizeDialog(id, size)}
+          onSetAlignment={onSetAlignment}
+        />
+      );
+    }
+
+    const topLav = lavs.find((l) => (l.alignment ?? "center") === "right");
+    const bottomLav = lavs.find((l) => (l.alignment ?? "center") === "left");
+    const hasTop = !!topLav;
+    const hasBottom = !!bottomLav;
+
+    const renderLavBlock = (lav: LavSectionConfig) => {
+      const cellSize = 40;
+      const gap = 6;
+      const blockHeight = cellSize * lav.size + gap * (lav.size - 1);
+      const alignment: LavAlignment = lav.alignment ?? "center";
+
+      return (
+        <ContextMenu key={lav.id}>
+          <ContextMenuTrigger render={<div />}>
+            <div
+              className="bg-primary/5 border-primary/30 text-primary flex items-center justify-center rounded-lg border-2"
+              style={{ width: `${cellSize}px`, height: `${blockHeight}px` }}
+            >
+              <Toilet className="h-5 w-5" />
+            </div>
+          </ContextMenuTrigger>
+          <ContextMenuContent>
+            <ContextMenuItem
+              onClick={() => onOpenSizeDialog(lav.id, lav.size)}
+              className="gap-2"
+            >
+              <Settings2 className="h-4 w-4" />
+              Customize Size
+            </ContextMenuItem>
+            <ContextMenuSub>
+              <ContextMenuSubTrigger className="gap-2">
+                <AlignCenter className="h-4 w-4" />
+                LAV Position
+              </ContextMenuSubTrigger>
+              <ContextMenuSubContent>
+                <ContextMenuItem
+                  onClick={() => onSetAlignment(lav.id, "left")}
+                  className="gap-2"
+                  disabled={hasBottom && alignment === "right"}
+                >
+                  <AlignLeft className="h-4 w-4" />
+                  Left
+                  {alignment === "left" && (
+                    <span className="text-muted-foreground ml-auto text-xs">
+                      ✓
+                    </span>
+                  )}
+                </ContextMenuItem>
+                <ContextMenuItem
+                  onClick={() => onSetAlignment(lav.id, "right")}
+                  className="gap-2"
+                  disabled={hasTop && alignment === "left"}
+                >
+                  <AlignRight className="h-4 w-4" />
+                  Right
+                  {alignment === "right" && (
+                    <span className="text-muted-foreground ml-auto text-xs">
+                      ✓
+                    </span>
+                  )}
+                </ContextMenuItem>
+              </ContextMenuSubContent>
+            </ContextMenuSub>
+            <ContextMenuSeparator />
+            <ContextMenuItem
+              onClick={() => onDelete(lav.id)}
+              className="text-destructive focus:text-destructive gap-2"
+            >
+              <Trash2 className="h-4 w-4" />
+              Delete LAV Section
+            </ContextMenuItem>
+          </ContextMenuContent>
+        </ContextMenu>
+      );
+    };
+
+    return (
+      <div className="flex h-100 flex-col justify-between">
+        {hasTop && topLav ? (
+          renderLavBlock(topLav)
+        ) : (
+          <div style={{ width: 40, height: 40 }} />
+        )}
+        {hasBottom && bottomLav ? (
+          renderLavBlock(bottomLav)
+        ) : (
+          <div style={{ width: 40, height: 40 }} />
+        )}
+      </div>
+    );
+  };
+
+  const SlotInserter = ({
+    position,
+    cabins,
+    onAddCabin,
+    onAddLavSection,
+    lavCountAtPosition,
+    exitMode,
+    exitCountAtPosition,
+    onAddExitSection,
+  }: {
+    position: number;
+    cabins: CabinConfig[];
+    onAddCabin: (cabin: CabinConfig) => void;
+    onAddLavSection: (lav: LavSectionConfig, position: number) => void;
+    lavCountAtPosition: number;
+    exitMode: boolean;
+    exitCountAtPosition: number;
+    onAddExitSection: (position: number) => void;
+  }) => (
+    <div className="flex flex-col items-center gap-2">
+      <AddCabinDialog
+        onAddCabin={onAddCabin}
+        index={position}
+        cabins={cabins}
+        trigger={
+          <div
+            title="Add Cabin"
+            className="border-border text-muted-foreground group flex h-10 w-10 cursor-pointer items-center justify-center rounded-xl border-2 shadow-sm transition-all hover:border-blue-400 hover:bg-blue-50/50 hover:text-blue-500 hover:shadow-md"
+          >
+            <Plus className="h-6 w-6 transition-transform group-hover:scale-110" />
+          </div>
+        }
+      />
+      {lavCountAtPosition < 2 && (
+        <AddLavSectionDialog
+          onAddLavSection={onAddLavSection}
+          position={position}
+          trigger={
+            <div
+              title="Add LAV"
+              className="border-border text-muted-foreground group flex h-10 w-10 cursor-pointer items-center justify-center rounded-xl border-2 shadow-sm transition-all hover:border-emerald-400 hover:bg-emerald-50/50 hover:text-emerald-500 hover:shadow-md"
+            >
+              <Toilet className="h-5 w-5 transition-transform group-hover:scale-110" />
+            </div>
+          }
+        />
+      )}
+      {exitMode && exitCountAtPosition < 2 && (
+        <button
+          type="button"
+          title="Add Exit"
+          onClick={() => onAddExitSection(position)}
+          className="group flex h-10 w-10 cursor-pointer items-center justify-center rounded-xl border-2 border-red-300 bg-red-50/40 text-red-500 shadow-sm transition-all hover:border-red-400 hover:bg-red-50 hover:text-red-600 hover:shadow-md"
+        >
+          <DoorOpen className="h-5 w-5 transition-transform group-hover:scale-110" />
+        </button>
+      )}
+    </div>
+  );
+
   return (
     <div className="bg-background flex min-h-150 overflow-hidden">
       <div className="border-border bg-muted/30 z-10 flex w-20 flex-col gap-2 border-r p-3 shadow-[4px_0_10px_-4px_rgba(0,0,0,0.05)]">
@@ -1472,8 +1460,8 @@ export const AircraftSeatMap = ({
         ))}
       </div>
 
-      <div className="bg-muted/5 scrollbar-thin scrollbar-thumb-muted-foreground/10 selection-boundary flex flex-1 overflow-auto p-12 select-none">
-        <div className="flex h-114 items-stretch">
+      <div className="bg-muted/5 scrollbar-thin scrollbar-thumb-muted-foreground/10 selection-boundary flex flex-1 overflow-auto px-12 py-4 select-none">
+        <div className="flex h-112 items-stretch">
           <div
             className="relative shrink-0"
             style={{ aspectRatio: "185 / 312" }}
@@ -1486,9 +1474,9 @@ export const AircraftSeatMap = ({
               className="pointer-events-none select-none"
             />
           </div>
-          <Card className="bg-background -ml-px w-fit max-w-full overflow-hidden rounded-l-none rounded-r-[12px] border border-[#DCDCDC]">
+          <Card className="bg-background -ml-px w-fit max-w-full overflow-hidden rounded-l-none rounded-r-[12px] border border-[#DCDCDC] !py-0">
             <CardContent
-              className={`min-h-106 min-w-150 ${cabins.length > 0 || "flex items-center justify-center"} h-full p-3`}
+              className={`min-h-112 min-w-150 ${cabins.length > 0 || "flex items-center justify-center"} h-full px-3 py-0`}
             >
               <div
                 ref={containerRef}
@@ -1529,9 +1517,6 @@ export const AircraftSeatMap = ({
                         <LavSlot
                           lavs={slotLavs}
                           onDelete={onDeleteLavSection}
-                          onCustomizeSize={(id, size) =>
-                            setLavSectionSizeDialog({ id, size })
-                          }
                           onSetAlignment={onSetLavSectionAlignment}
                           onOpenSizeDialog={(id, size) =>
                             setLavSectionSizeDialog({ id, size })
@@ -1587,9 +1572,6 @@ export const AircraftSeatMap = ({
                         <LavSlot
                           lavs={slotLavs}
                           onDelete={onDeleteLavSection}
-                          onCustomizeSize={(id, size) =>
-                            setLavSectionSizeDialog({ id, size })
-                          }
                           onSetAlignment={onSetLavSectionAlignment}
                           onOpenSizeDialog={(id, size) =>
                             setLavSectionSizeDialog({ id, size })
