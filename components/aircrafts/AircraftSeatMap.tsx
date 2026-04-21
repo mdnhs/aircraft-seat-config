@@ -798,7 +798,7 @@ const Wings = ({ wings, containerRef, cabins }: WingsProps) => {
             top: `${Math.max(0, positions.right.top - wingHeight)}px`,
             height: `${wingHeight}px`,
             zIndex: 50,
-            clipPath: "polygon(9.6% 0%, 100% 0%, 93.3% 100%, 0% 100%)",
+            clipPath: "polygon(3% 0%, 100% 0%, 97% 100%, 0% 100%)",
           }}
         />
       )}
@@ -811,7 +811,7 @@ const Wings = ({ wings, containerRef, cabins }: WingsProps) => {
             top: `${positions.left.bottom}px`,
             height: `${wingHeight}px`,
             zIndex: 50,
-            clipPath: "polygon(0% 0%, 93.3% 0%, 100% 100%, 9.6% 100%)",
+            clipPath: "polygon(0% 0%, 97% 0%, 100% 100%, 3% 100%)",
           }}
         />
       )}
