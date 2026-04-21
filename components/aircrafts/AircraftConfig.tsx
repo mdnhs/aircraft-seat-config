@@ -16,8 +16,10 @@ import { AircraftHeader } from "./AircraftHeader";
 import { AircraftSeatMap } from "./AircraftSeatMap";
 import { AircraftToolbar } from "./AircraftToolbar";
 import { AddZoneDialog } from "./AddZoneDialog";
+import { AddEmergencyExitDialog } from "./AddEmergencyExitDialog";
+import { AddWingDialog } from "./AddWingDialog";
 import { TOOLS, TOTAL_SEATS } from "./constants";
-import { CabinConfig, SeatConfig, ZoneConfig } from "./types";
+import { CabinConfig, EmergencyExitConfig, ExitAlignment, ExitSectionConfig, LavAlignment, LavSectionConfig, SeatConfig, WingsConfig, ZoneConfig } from "./types";
 
 const INITIAL_CABINS: CabinConfig[] = [];
 
@@ -92,7 +94,32 @@ export default function AircraftConfig() {
       parseAsJson<ZoneConfig>((v) => v as ZoneConfig),
     ).withDefault([]),
   );
+  const [emergencyExits, setEmergencyExits] = useQueryState<EmergencyExitConfig[]>(
+    "exits",
+    parseAsArrayOf(
+      parseAsJson<EmergencyExitConfig>((v) => v as EmergencyExitConfig),
+    ).withDefault([]),
+  );
+  const [lavSections, setLavSections] = useQueryState<LavSectionConfig[]>(
+    "lavs",
+    parseAsArrayOf(
+      parseAsJson<LavSectionConfig>((v) => v as LavSectionConfig),
+    ).withDefault([]),
+  );
+  const [exitSections, setExitSections] = useQueryState<ExitSectionConfig[]>(
+    "exitSections",
+    parseAsArrayOf(
+      parseAsJson<ExitSectionConfig>((v) => v as ExitSectionConfig),
+    ).withDefault([]),
+  );
+  const [exitMode, setExitMode] = useState(false);
+  const [wings, setWings] = useQueryState<WingsConfig | null>(
+    "wings",
+    parseAsJson<WingsConfig | null>((v) => v as WingsConfig | null).withDefault(null),
+  );
+  const [showAddWingDialog, setShowAddWingDialog] = useState(false);
   const [showAddZoneDialog, setShowAddZoneDialog] = useState(false);
+  const [showAddEmergencyExitDialog, setShowAddEmergencyExitDialog] = useState(false);
   const [activeId, setActiveId] = React.useState<string | null>(null);
 
   const sensors = useSensors(
@@ -240,24 +267,116 @@ export default function AircraftConfig() {
   const handleAddCabin = (newCabin: CabinConfig, index?: number) => {
     const currentCabins = cabins || [];
     const nextCabins = [...currentCabins];
-    if (index !== undefined) {
-      nextCabins.splice(index, 0, newCabin);
-    } else {
-      nextCabins.push(newCabin);
-    }
+    const insertAt = index ?? nextCabins.length;
+    nextCabins.splice(insertAt, 0, newCabin);
 
     const result = recalculateRows(nextCabins, seatConfig || {});
     setCabins(result.cabins);
     setSeatConfig(result.seatConfig);
+    setLavSections((prev) =>
+      (prev || []).map((l) =>
+        l.position > insertAt ? { ...l, position: l.position + 1 } : l,
+      ),
+    );
+    setExitSections((prev) =>
+      (prev || []).map((e) =>
+        e.position > insertAt ? { ...e, position: e.position + 1 } : e,
+      ),
+    );
   };
 
   const handleDeleteCabin = (id: string) => {
     const currentCabins = cabins || [];
+    const removedIdx = currentCabins.findIndex((c) => c.id === id);
     const nextCabins = currentCabins.filter((c) => c.id !== id);
 
     const result = recalculateRows(nextCabins, seatConfig || {});
     setCabins(result.cabins);
     setSeatConfig(result.seatConfig);
+    if (removedIdx !== -1) {
+      setLavSections((prev) =>
+        (prev || []).map((l) => {
+          if (l.position === removedIdx) {
+            // Was before the deleted cabin — move to end of previous slot (or stay at 0)
+            return { ...l, position: Math.max(0, removedIdx - 1) };
+          }
+          if (l.position > removedIdx) return { ...l, position: l.position - 1 };
+          return l;
+        }),
+      );
+      setExitSections((prev) =>
+        (prev || []).map((e) => {
+          if (e.position === removedIdx) {
+            return { ...e, position: Math.max(0, removedIdx - 1) };
+          }
+          if (e.position > removedIdx) return { ...e, position: e.position - 1 };
+          return e;
+        }),
+      );
+    }
+  };
+
+  const handleAddLavSection = (lav: LavSectionConfig) => {
+    setLavSections((prev) => {
+      const current = prev || [];
+      const existing = current.filter((l) => l.position === lav.position);
+      if (existing.length >= 2) return current;
+      if (existing.length === 1) {
+        const existingAlign = existing[0].alignment ?? "center";
+        // Ensure first LAV gets a side; new LAV gets the opposite
+        const firstAlignment: LavAlignment = existingAlign === "left" ? "left" : "right";
+        const secondAlignment: LavAlignment = firstAlignment === "right" ? "left" : "right";
+        return current
+          .map((l) => l.id === existing[0].id ? { ...l, alignment: firstAlignment } : l)
+          .concat({ ...lav, alignment: secondAlignment });
+      }
+      return [...current, lav];
+    });
+  };
+
+  const handleDeleteLavSection = (id: string) => {
+    setLavSections((prev) => (prev || []).filter((l) => l.id !== id));
+  };
+
+  const handleSetLavSectionSize = (id: string, size: number) => {
+    setLavSections((prev) =>
+      (prev || []).map((l) => (l.id === id ? { ...l, size } : l)),
+    );
+  };
+
+  const handleSetLavSectionAlignment = (id: string, alignment: LavAlignment) => {
+    setLavSections((prev) =>
+      (prev || []).map((l) => (l.id === id ? { ...l, alignment } : l)),
+    );
+  };
+
+  const handleAddExitSection = (position: number) => {
+    setExitSections((prev) => {
+      const current = prev || [];
+      const existing = current.filter((e) => e.position === position);
+      if (existing.length >= 2) return current;
+      const existingAlignment = existing[0]?.alignment ?? "right";
+      const newAlignment: ExitAlignment =
+        existing.length === 0
+          ? "right"
+          : existingAlignment === "right"
+            ? "left"
+            : "right";
+      return [
+        ...current,
+        { id: Math.random().toString(36).substring(7), position, alignment: newAlignment },
+      ];
+    });
+  };
+
+  const handleDeleteExitSection = (id: string) => {
+    setExitSections((prev) => (prev || []).filter((e) => e.id !== id));
+  };
+
+  const handleSetExitSectionAlignment = (id: string, alignment: ExitAlignment) => {
+    setExitSections((prev) =>
+      (prev || []).map((e) => (e.id === id ? { ...e, alignment } : e)),
+    );
   };
 
   const handleUpdateCabin = (id: string, updates: Partial<CabinConfig>) => {
@@ -307,6 +426,35 @@ export default function AircraftConfig() {
   const handleAddZone = (zone: ZoneConfig) => {
     setZones((prev) => [...(prev || []), zone]);
     setSelectedSeats([]);
+  };
+
+  const handleDeleteEmergencyExit = (id: string) => {
+    setEmergencyExits((prev) => (prev || []).filter((e) => e.id !== id));
+  };
+
+  const handleAddEmergencyExit = (exit: EmergencyExitConfig) => {
+    const row = exit.row;
+    const cabin = (cabins || []).find(
+      (c) => row >= c.startRow && row <= c.endRow,
+    );
+    if (cabin) {
+      const groups = cabin.seatFormat.split("-").map(Number);
+      const totalCols = groups.reduce((a, b) => a + b, 0);
+      const labels =
+        cabin.customLabels && cabin.customLabels.length === totalCols
+          ? cabin.customLabels
+          : Array.from({ length: totalCols }, (_, i) =>
+              String.fromCharCode(65 + i),
+            );
+      setSeatConfig((prev) => {
+        const next = { ...(prev || {}) };
+        labels.forEach((col) => {
+          delete next[`${row}-${col}`];
+        });
+        return next;
+      });
+    }
+    setEmergencyExits((prev) => [...(prev || []), { id: exit.id, row: exit.row }]);
   };
 
   const handleDeleteSeat = (seatId: string) => {
@@ -362,16 +510,33 @@ export default function AircraftConfig() {
           <AircraftToolbar
             selectedSeats={selectedSeats}
             onZoneClick={() => setShowAddZoneDialog(true)}
+            onEmergencyExitClick={() => setShowAddEmergencyExitDialog(true)}
+            onWingClick={() => setShowAddWingDialog(true)}
+            exitMode={exitMode}
+            onExitModeToggle={() => setExitMode((v) => !v)}
           />
           <AircraftSeatMap
             seatConfig={seatConfig || {}}
             cabins={cabins || INITIAL_CABINS}
             zones={zones || []}
+            emergencyExits={emergencyExits || []}
+            lavSections={lavSections || []}
+            onDeleteEmergencyExit={handleDeleteEmergencyExit}
             onAddCabin={handleAddCabin}
             onDeleteCabin={handleDeleteCabin}
             onUpdateCabin={handleUpdateCabin}
             onDeleteSeat={handleDeleteSeat}
             onSetLavSize={handleSetLavSize}
+            onAddLavSection={handleAddLavSection}
+            onDeleteLavSection={handleDeleteLavSection}
+            onSetLavSectionSize={handleSetLavSectionSize}
+            onSetLavSectionAlignment={handleSetLavSectionAlignment}
+            exitSections={exitSections || []}
+            exitMode={exitMode}
+            onAddExitSection={handleAddExitSection}
+            onDeleteExitSection={handleDeleteExitSection}
+            onSetExitSectionAlignment={handleSetExitSectionAlignment}
+            wings={wings || null}
             selectedSeats={selectedSeats}
             onSelectedSeatsChange={setSelectedSeats}
           />
@@ -380,6 +545,19 @@ export default function AircraftConfig() {
             onOpenChange={setShowAddZoneDialog}
             selectedSeats={selectedSeats}
             onAddZone={handleAddZone}
+          />
+          <AddEmergencyExitDialog
+            open={showAddEmergencyExitDialog}
+            onOpenChange={setShowAddEmergencyExitDialog}
+            cabins={cabins || INITIAL_CABINS}
+            onAddEmergencyExit={handleAddEmergencyExit}
+          />
+          <AddWingDialog
+            open={showAddWingDialog}
+            onOpenChange={setShowAddWingDialog}
+            cabins={cabins || INITIAL_CABINS}
+            wings={wings || null}
+            onSave={(newWings) => setWings(newWings)}
           />
 
           <DragOverlay dropAnimation={null} zIndex={1000}>

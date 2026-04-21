@@ -37,7 +37,7 @@ const tabs = [
     ),
   },
   {
-    label: "Exit Row",
+    label: "Exit",
     icon: (
       <svg
         width="15"
@@ -79,18 +79,38 @@ const tabs = [
 interface AircraftToolbarProps {
   selectedSeats: string[];
   onZoneClick: () => void;
+  onEmergencyExitClick: () => void;
+  onWingClick: () => void;
+  exitMode: boolean;
+  onExitModeToggle: () => void;
 }
 
 export const AircraftToolbar = ({
   selectedSeats,
   onZoneClick,
+  onEmergencyExitClick,
+  onWingClick,
+  exitMode,
+  onExitModeToggle,
 }: AircraftToolbarProps) => {
   const [active, setActive] = useState<number | null>(null);
 
   const handleTabClick = (idx: number) => {
+    const label = tabs[idx].label;
+    if (label === "Exit") {
+      onExitModeToggle();
+      setActive(active === idx ? null : idx);
+      return;
+    }
     setActive(active === idx ? null : idx);
-    if (tabs[idx].label === "Zones" && selectedSeats.length > 0) {
+    if (label === "Zones" && selectedSeats.length > 0) {
       onZoneClick();
+    }
+    if (label === "Wing") {
+      onWingClick();
+    }
+    if (label === "Emergency Exit") {
+      onEmergencyExitClick();
     }
   };
 
@@ -100,12 +120,15 @@ export const AircraftToolbar = ({
         Aircraft Seat Configuration
       </span>
       <div className="flex w-fit items-center gap-1 rounded-full border border-gray-200 bg-white px-1.5 py-1.5">
-        {tabs.map((tab, idx) => (
+        {tabs.map((tab, idx) => {
+          const isExitTab = tab.label === "Exit";
+          const isActive = isExitTab ? exitMode : active === idx;
+          return (
           <button
             key={tab.label}
             onClick={() => handleTabClick(idx)}
             className={`flex cursor-pointer items-center gap-1.5 rounded-full px-3.5 py-1.5 text-[11px] font-bold tracking-wide uppercase transition-colors ${
-              active === idx
+              isActive
                 ? "bg-blue-50 text-blue-600"
                 : "text-gray-400 hover:bg-gray-100 hover:text-gray-700"
             }`}
@@ -118,7 +141,8 @@ export const AircraftToolbar = ({
               </span>
             )}
           </button>
-        ))}
+          );
+        })}
       </div>
     </div>
   );

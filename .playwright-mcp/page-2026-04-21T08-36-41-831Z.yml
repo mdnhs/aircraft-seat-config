@@ -1,0 +1,92 @@
+- generic [active] [ref=e1]:
+  - button "Open Next.js Dev Tools" [ref=e7] [cursor=pointer]:
+    - img [ref=e8]
+  - alert [ref=e11]
+  - generic [ref=e12]:
+    - generic [ref=e14]:
+      - generic [ref=e15]:
+        - generic [ref=e16]:
+          - img [ref=e19]
+          - heading "Aircraft Details" [level=1] [ref=e25]
+        - generic [ref=e26]:
+          - generic [ref=e27]:
+            - paragraph [ref=e28]: Total Seats
+            - paragraph [ref=e29]: "96"
+          - generic [ref=e30]:
+            - paragraph [ref=e31]: Available Seats
+            - paragraph [ref=e32]: "96"
+      - generic [ref=e33]:
+        - generic [ref=e34]:
+          - generic [ref=e35]: Aircraft Type
+          - combobox [ref=e36]:
+            - generic [ref=e37]: Select an Aircraft
+            - img: ▼
+          - textbox [ref=e38]
+        - generic [ref=e39]:
+          - generic [ref=e40]: Registration No.
+          - textbox "N123AA" [ref=e41]
+        - generic [ref=e42]:
+          - generic [ref=e43]: Aircraft Status
+          - combobox [ref=e44]:
+            - generic [ref=e45]: Select an Aircraft
+            - img: ▼
+          - textbox [ref=e46]
+        - generic [ref=e47]:
+          - generic [ref=e48]: Jump Seats
+          - textbox "4" [ref=e49]
+    - generic [ref=e50]:
+      - generic [ref=e51]: Aircraft Seat Configuration
+      - generic [ref=e52]:
+        - button "Zones" [ref=e53] [cursor=pointer]:
+          - img [ref=e54]
+          - text: Zones
+        - button "Wing" [ref=e57] [cursor=pointer]:
+          - img [ref=e58]
+          - text: Wing
+        - button "Exit" [ref=e60] [cursor=pointer]:
+          - img [ref=e61]
+          - text: Exit
+        - button "Emergency Exit" [ref=e64] [cursor=pointer]:
+          - img [ref=e65]
+          - text: Emergency Exit
+    - generic [ref=e68]:
+      - generic [ref=e69]:
+        - button "SEAT" [ref=e70]:
+          - button "SEAT" [ref=e71]:
+            - img [ref=e73]
+            - generic [ref=e76]: SEAT
+        - button "LAV" [ref=e77]:
+          - button "LAV" [ref=e78]:
+            - img [ref=e80]
+            - generic [ref=e83]: LAV
+        - button "Baby Cot" [ref=e84]:
+          - button "Baby Cot" [ref=e85]:
+            - img [ref=e87]
+            - generic [ref=e90]: Baby Cot
+        - button "WHCHR" [ref=e91]:
+          - button "WHCHR" [ref=e92]:
+            - img [ref=e94]
+            - generic [ref=e100]: WHCHR
+        - button "STRCHR" [ref=e101]:
+          - button "STRCHR" [ref=e102]:
+            - img [ref=e104]
+            - generic [ref=e106]: STRCHR
+        - button "BLOCK" [ref=e107]:
+          - button "BLOCK" [ref=e108]:
+            - img [ref=e110]
+            - generic [ref=e113]: BLOCK
+        - button "DELETE" [ref=e114]:
+          - button "DELETE" [ref=e115]:
+            - img [ref=e117]
+            - generic [ref=e120]: DELETE
+      - generic [ref=e122]:
+        - generic [ref=e123]:
+          - img "Aircraft Silhouette"
+        - generic [ref=e125]:
+          - generic [ref=e127]:
+            - button "Add Cabin" [ref=e128] [cursor=pointer]:
+              - img [ref=e129]
+            - button "Add LAV" [ref=e130] [cursor=pointer]:
+              - img [ref=e131]
+          - status [ref=e134]
+    - status [ref=e135]

@@ -1,0 +1,66 @@
+[     101ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://localhost:3000/_next/static/chunks/05w9_next_dist_04sc5oc._.js:2431
+[     147ms] [LOG] [HMR] connected @ http://localhost:3000/_next/static/chunks/05w9_next_dist_04sc5oc._.js:2431
+[ 2170496ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3000/_next/static/chunks/05w9_next_dist_04sc5oc._.js:2431
+[ 2170539ms] [LOG] [Fast Refresh] done in 53ms @ http://localhost:3000/_next/static/chunks/05w9_next_dist_04sc5oc._.js:2431
+[ 2182875ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3000/_next/static/chunks/05w9_next_dist_04sc5oc._.js:2431
+[ 2183026ms] [LOG] [Fast Refresh] done in 52ms @ http://localhost:3000/_next/static/chunks/05w9_next_dist_04sc5oc._.js:2431
+[ 2192081ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3000/_next/static/chunks/05w9_next_dist_04sc5oc._.js:2431
+[ 2192226ms] [LOG] [Fast Refresh] done in 49ms @ http://localhost:3000/_next/static/chunks/05w9_next_dist_04sc5oc._.js:2431
+[ 2201611ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3000/_next/static/chunks/05w9_next_dist_04sc5oc._.js:2431
+[ 2201776ms] [LOG] [Fast Refresh] done in 61ms @ http://localhost:3000/_next/static/chunks/05w9_next_dist_04sc5oc._.js:2431
+[ 2210472ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3000/_next/static/chunks/05w9_next_dist_04sc5oc._.js:2431
+[ 2210605ms] [LOG] [Fast Refresh] done in 51ms @ http://localhost:3000/_next/static/chunks/05w9_next_dist_04sc5oc._.js:2431
+[ 2221176ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3000/_next/static/chunks/05w9_next_dist_04sc5oc._.js:2431
+[ 2221365ms] [LOG] [Fast Refresh] done in 55ms @ http://localhost:3000/_next/static/chunks/05w9_next_dist_04sc5oc._.js:2431
+[ 2248520ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3000/_next/static/chunks/05w9_next_dist_04sc5oc._.js:2431
+[ 2248549ms] [LOG] [Fast Refresh] done in 34ms @ http://localhost:3000/_next/static/chunks/05w9_next_dist_04sc5oc._.js:2431
+[ 2257805ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3000/_next/static/chunks/05w9_next_dist_04sc5oc._.js:2431
+[ 2257812ms] [ERROR] ./components/aircrafts/AircraftToolbar.tsx:139:10
+Expected '</', got ')'
+  137 |             )}
+  138 |           </button>
+> 139 |         ))}
+      |          ^
+  140 |       </div>
+  141 |     </div>
+  142 |   );
+
+Parsing ecmascript source code failed
+
+Import traces:
+  Client Component Browser:
+    ./components/aircrafts/AircraftToolbar.tsx [Client Component Browser]
+    ./components/aircrafts/AircraftConfig.tsx [Client Component Browser]
+    ./components/aircrafts/AircraftConfig.tsx [Server Component]
+    ./app/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./components/aircrafts/AircraftToolbar.tsx [Client Component SSR]
+    ./components/aircrafts/AircraftConfig.tsx [Client Component SSR]
+    ./components/aircrafts/AircraftConfig.tsx [Server Component]
+    ./app/page.tsx [Server Component] @ http://localhost:3000/_next/static/chunks/05w9_next_dist_04sc5oc._.js:3272
+[ 2257996ms] [ERROR] ./components/aircrafts/AircraftToolbar.tsx:139:10
+Expected '</', got ')'
+  137 |             )}
+  138 |           </button>
+> 139 |         ))}
+      |          ^
+  140 |       </div>
+  141 |     </div>
+  142 |   );
+
+Parsing ecmascript source code failed
+
+Import traces:
+  Client Component Browser:
+    ./components/aircrafts/AircraftToolbar.tsx [Client Component Browser]
+    ./components/aircrafts/AircraftConfig.tsx [Client Component Browser]
+    ./components/aircrafts/AircraftConfig.tsx [Server Component]
+    ./app/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./components/aircrafts/AircraftToolbar.tsx [Client Component SSR]
+    ./components/aircrafts/AircraftConfig.tsx [Client Component SSR]
+    ./components/aircrafts/AircraftConfig.tsx [Server Component]
+    ./app/page.tsx [Server Component] @ http://localhost:3000/_next/static/chunks/05w9_next_dist_04sc5oc._.js:3272
+[ 2258090ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3000/_next/static/chunks/05w9_next_dist_04sc5oc._.js:2431
