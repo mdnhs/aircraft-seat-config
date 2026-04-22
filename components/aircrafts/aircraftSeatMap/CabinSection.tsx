@@ -70,11 +70,23 @@ export const CabinSection = ({
     (_, i) => cabin.startRow + i,
   );
 
+  const exitRowMap = emergencyExits.reduce<Record<number, EmergencyExitConfig>>(
+    (acc, e) => {
+      acc[e.row] = e;
+      return acc;
+    },
+    {},
+  );
+
+  let labelCount = 0;
   const rowLabels = rows.map((row, idx) => {
+    if (exitRowMap[row] !== undefined) return "";
     if (cabin.customRowLabels && cabin.customRowLabels[idx]) {
       return cabin.customRowLabels[idx];
     }
-    return String(row).padStart(2, "0");
+    const label = String(cabin.startRow + labelCount).padStart(2, "0");
+    labelCount++;
+    return label;
   });
 
   const groups = cabin.seatFormat.split("-").map(Number);
@@ -101,14 +113,6 @@ export const CabinSection = ({
 
   const reversedLabels = [...allLabels].reverse();
 
-  const exitRowMap = emergencyExits.reduce<Record<number, EmergencyExitConfig>>(
-    (acc, e) => {
-      acc[e.row] = e;
-      return acc;
-    },
-    {},
-  );
-
   const hasExitRows = rows.some((r) => exitRowMap[r] !== undefined);
 
   const colGroups = [...groups].reverse().reduce(
@@ -121,6 +125,10 @@ export const CabinSection = ({
     },
     { groups: [] as string[][], nextIndex: 0 },
   ).groups;
+
+  const firstCol = colGroups[0]?.[0];
+  const lastGroup = colGroups[colGroups.length - 1];
+  const lastCol = lastGroup?.[lastGroup.length - 1];
 
   const getLavHeight = (mainCol: string, lavSize: number): number => {
     let gi = -1,
@@ -196,7 +204,7 @@ export const CabinSection = ({
           </span>
         </div>
 
-        <div className="border-border/60 bg-background flex flex-col justify-center rounded-3xl border p-6 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)] transition-shadow hover:shadow-[0_8px_30px_-4px_rgba(0,0,0,0.08)]">
+        <div className="border-border/60 bg-background flex flex-col justify-center rounded-3xl border p-3 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)] transition-shadow hover:shadow-[0_8px_30px_-4px_rgba(0,0,0,0.08)]">
           <div
             className="relative flex flex-col"
             style={{ gap: `${verticalGap}px` }}
@@ -215,25 +223,6 @@ export const CabinSection = ({
                     left: `${left}px`,
                     width: `${width}px`,
                     backgroundColor: `${span.color}15`,
-                  }}
-                />
-              );
-            })}
-
-            {rows.map((row, rowIdx) => {
-              if (exitRowMap[row] === undefined) return null;
-              const cellWidth = seatSize + 8;
-              const gapWidth = 8;
-              const left = 40 + rowIdx * (cellWidth + gapWidth) - 4;
-              const width = cellWidth + 8;
-              return (
-                <div
-                  key={`exit-bg-${row}`}
-                  className="pointer-events-none absolute inset-y-0 rounded-xl"
-                  style={{
-                    left: `${left}px`,
-                    width: `${width}px`,
-                    backgroundColor: "rgb(239 68 68 / 0.08)",
                   }}
                 />
               );
@@ -299,133 +288,178 @@ export const CabinSection = ({
               style={{ marginBottom: `${verticalGap}px` }}
             >
               <div className="w-8 flex-shrink-0" />
-              {rows.map((row, idx) => {
-                const exitConfig = exitRowMap[row];
-                if (exitConfig !== undefined) {
-                  return (
-                    <ContextMenu key={row}>
-                      <ContextMenuTrigger
-                        render={
-                          <div
-                            data-row={row}
-                            className="flex flex-shrink-0 cursor-context-menu items-center justify-center"
-                            style={{ width: `${seatSize + 8}px` }}
-                          />
-                        }
-                      >
-                        <span className="block max-w-full truncate text-center text-[9px] font-bold tracking-tight text-red-500 uppercase select-none">
-                          EXIT
-                        </span>
-                      </ContextMenuTrigger>
-                      <ContextMenuContent>
+              {rows.map((row, idx) => (
+                <ContextMenu key={row}>
+                  <ContextMenuTrigger
+                    render={
+                      <div
+                        data-row={row}
+                        className="flex-shrink-0 cursor-context-menu"
+                        style={{ width: `${seatSize + 8}px` }}
+                      />
+                    }
+                  >
+                    <span className="text-muted-foreground/40 block text-center text-[10px] font-bold transition-colors select-none hover:text-blue-500">
+                      {exitRowMap[row] === undefined ? rowLabels[idx] : ""}
+                    </span>
+                  </ContextMenuTrigger>
+                  <ContextMenuContent>
+                    <ContextMenuItem
+                      onClick={() => onRenameRow(cabin.id, idx, rowLabels[idx])}
+                      className="gap-2"
+                    >
+                      <Settings2 className="h-4 w-4" />
+                      Rename Row
+                    </ContextMenuItem>
+                    {exitRowMap[row] !== undefined && (
+                      <>
+                        <ContextMenuSeparator />
                         <ContextMenuItem
-                          onClick={() => onDeleteEmergencyExit(exitConfig.id)}
+                          onClick={() =>
+                            onDeleteEmergencyExit(exitRowMap[row].id)
+                          }
                           className="text-destructive focus:text-destructive gap-2"
                         >
                           <Trash2 className="h-4 w-4" />
                           Delete Emergency Exit
                         </ContextMenuItem>
-                      </ContextMenuContent>
-                    </ContextMenu>
-                  );
-                }
-                return (
-                  <ContextMenu key={row}>
-                    <ContextMenuTrigger
-                      render={
-                        <div
-                          data-row={row}
-                          className="flex-shrink-0 cursor-context-menu"
-                          style={{ width: `${seatSize + 8}px` }}
-                        />
-                      }
-                    >
-                      <span className="text-muted-foreground/40 block text-center text-[10px] font-bold transition-colors select-none hover:text-blue-500">
-                        {rowLabels[idx]}
-                      </span>
-                    </ContextMenuTrigger>
-                    <ContextMenuContent>
-                      <ContextMenuItem
-                        onClick={() =>
-                          onRenameRow(cabin.id, idx, rowLabels[idx])
-                        }
-                        className="gap-2"
-                      >
-                        <Settings2 className="h-4 w-4" />
-                        Rename Row
-                      </ContextMenuItem>
-                    </ContextMenuContent>
-                  </ContextMenu>
-                );
-              })}
+                      </>
+                    )}
+                  </ContextMenuContent>
+                </ContextMenu>
+              ))}
             </div>
 
-            {colGroups.map((group, groupIdx) => (
-              <React.Fragment key={groupIdx}>
-                {group.map((col) => (
+            <div
+              className="relative flex flex-col"
+              style={{ gap: `${verticalGap}px` }}
+            >
+              {rows.map((row, rowIdx) => {
+                if (exitRowMap[row] === undefined) return null;
+                const cellWidth = seatSize + 8;
+                const gapWidth = 8;
+                const left = 40 + rowIdx * (cellWidth + gapWidth) - 4;
+                const width = cellWidth + 8;
+                return (
                   <div
-                    key={col}
-                    className="flex items-center gap-2"
-                    style={{ height: `${seatSize}px` }}
-                  >
-                    <ContextMenu>
-                      <ContextMenuTrigger
-                        render={
-                          <div className="flex w-8 flex-shrink-0 cursor-context-menu items-center justify-center" />
-                        }
-                      >
-                        <span className="text-muted-foreground/40 text-[11px] font-bold transition-colors select-none hover:text-blue-500">
-                          {col}
-                        </span>
-                      </ContextMenuTrigger>
-                      <ContextMenuContent>
-                        <ContextMenuItem
-                          onClick={() => {
-                            const colIndex = allLabels.indexOf(col);
-                            onRenameColumn(cabin.id, colIndex, col);
-                          }}
-                          className="gap-2"
+                    key={`exit-bg-${row}`}
+                    className="pointer-events-none absolute inset-y-0 rounded-xl"
+                    style={{
+                      left: `${left}px`,
+                      width: `${width}px`,
+                      backgroundColor: "rgb(239 68 68 / 0.08)",
+                      borderLeft: "1px dashed rgb(239 68 68 / 0.5)",
+                      borderRight: "1px dashed rgb(239 68 68 / 0.5)",
+                    }}
+                  />
+                );
+              })}
+
+              {colGroups.map((group, groupIdx) => (
+                <React.Fragment key={groupIdx}>
+                  {group.map((col) => (
+                    <div
+                      key={col}
+                      className="flex items-center gap-2"
+                      style={{ height: `${seatSize}px` }}
+                    >
+                      <ContextMenu>
+                        <ContextMenuTrigger
+                          render={
+                            <div className="flex w-8 flex-shrink-0 cursor-context-menu items-center justify-center" />
+                          }
                         >
-                          <Settings2 className="h-4 w-4" />
-                          Rename Label
-                        </ContextMenuItem>
-                      </ContextMenuContent>
-                    </ContextMenu>
-                    {rows.map((row) => {
-                      const id = `${row}-${col}`;
-                      const equipment = seatConfig[id];
+                          <span className="text-muted-foreground/40 text-[11px] font-bold transition-colors select-none hover:text-blue-500">
+                            {col}
+                          </span>
+                        </ContextMenuTrigger>
+                        <ContextMenuContent>
+                          <ContextMenuItem
+                            onClick={() => {
+                              const colIndex = allLabels.indexOf(col);
+                              onRenameColumn(cabin.id, colIndex, col);
+                            }}
+                            className="gap-2"
+                          >
+                            <Settings2 className="h-4 w-4" />
+                            Rename Label
+                          </ContextMenuItem>
+                        </ContextMenuContent>
+                      </ContextMenu>
+                      {rows.map((row) => {
+                        const id = `${row}-${col}`;
+                        const equipment = seatConfig[id];
 
-                      if (exitRowMap[row] !== undefined) {
-                        return (
-                          <ContextMenu key={id}>
-                            <ContextMenuTrigger
-                              render={
-                                <div
-                                  data-row={row}
-                                  style={{
-                                    width: `${seatSize + 8}px`,
-                                    height: `${seatSize}px`,
-                                  }}
-                                  className="flex-shrink-0 cursor-context-menu"
-                                />
-                              }
-                            />
-                            <ContextMenuContent>
-                              <ContextMenuItem
-                                onClick={() =>
-                                  onDeleteEmergencyExit(exitRowMap[row]!.id)
+                        if (exitRowMap[row] !== undefined) {
+                          const isTopOrBottom =
+                            col === firstCol || col === lastCol;
+                          return (
+                            <ContextMenu key={id}>
+                              <ContextMenuTrigger
+                                render={
+                                  <div
+                                    data-row={row}
+                                    style={{
+                                      width: `${seatSize + 8}px`,
+                                      height: `${seatSize}px`,
+                                    }}
+                                    className="flex shrink-0 cursor-context-menu items-center justify-center"
+                                  />
                                 }
-                                className="text-destructive focus:text-destructive gap-2"
                               >
-                                <Trash2 className="h-4 w-4" />
-                                Delete Emergency Exit
-                              </ContextMenuItem>
-                            </ContextMenuContent>
-                          </ContextMenu>
-                        );
-                      }
+                                {isTopOrBottom && (
+                                  <span className="text-[10px] font-black tracking-tight text-red-600/90 select-none">
+                                    EXIT
+                                  </span>
+                                )}
+                              </ContextMenuTrigger>
+                              <ContextMenuContent>
+                                <ContextMenuItem
+                                  onClick={() =>
+                                    onDeleteEmergencyExit(exitRowMap[row]!.id)
+                                  }
+                                  className="text-destructive focus:text-destructive gap-2"
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                  Delete Emergency Exit
+                                </ContextMenuItem>
+                              </ContextMenuContent>
+                            </ContextMenu>
+                          );
+                        }
 
-                      if (equipment === "lav-occupied") {
+                        if (equipment === "lav-occupied") {
+                          return (
+                            <div
+                              key={id}
+                              data-row={row}
+                              style={{
+                                width: `${seatSize + 8}px`,
+                                height: `${seatSize}px`,
+                              }}
+                              className="flex flex-shrink-0 justify-center"
+                            />
+                          );
+                        }
+
+                        const isLav = equipment === "lav";
+
+                        let lavSize = 1;
+                        if (isLav) {
+                          const colIdx = allLabels.indexOf(col);
+                          for (let i = colIdx - 1; i >= 0; i--) {
+                            if (
+                              seatConfig[`${row}-${allLabels[i]}`] ===
+                              "lav-occupied"
+                            )
+                              lavSize++;
+                            else break;
+                          }
+                        }
+                        const lavHeight = isLav
+                          ? getLavHeight(col, lavSize)
+                          : seatSize;
+
                         return (
                           <div
                             key={id}
@@ -434,126 +468,48 @@ export const CabinSection = ({
                               width: `${seatSize + 8}px`,
                               height: `${seatSize}px`,
                             }}
-                            className="flex flex-shrink-0 justify-center"
-                          />
-                        );
-                      }
-
-                      const isLav = equipment === "lav";
-
-                      let lavSize = 1;
-                      if (isLav) {
-                        const colIdx = allLabels.indexOf(col);
-                        for (let i = colIdx - 1; i >= 0; i--) {
-                          if (
-                            seatConfig[`${row}-${allLabels[i]}`] ===
-                            "lav-occupied"
-                          )
-                            lavSize++;
-                          else break;
-                        }
-                      }
-                      const lavHeight = isLav
-                        ? getLavHeight(col, lavSize)
-                        : seatSize;
-
-                      return (
-                        <div
-                          key={id}
-                          data-row={row}
-                          style={{
-                            width: `${seatSize + 8}px`,
-                            height: `${seatSize}px`,
-                          }}
-                          className="relative flex flex-shrink-0 items-center justify-center"
-                        >
-                          <SeatCell
-                            id={id}
-                            row={row}
-                            col={col}
-                            size={seatSize}
-                            equipment={equipment}
-                            selected={selectedSeats.includes(id)}
-                            onDeleteSeat={onDeleteSeat}
-                            onCustomizeLavSize={
-                              isLav ? () => onCustomizeLavSize(id) : undefined
-                            }
-                            style={
-                              isLav
-                                ? {
-                                    height: `${lavHeight}px`,
-                                    width: `${seatSize}px`,
-                                    zIndex: 10,
-                                    position: "absolute",
-                                    top: 0,
-                                    left: "4px",
-                                  }
-                                : undefined
-                            }
-                          />
-                        </div>
-                      );
-                    })}
-                  </div>
-                ))}
-                {groupIdx < colGroups.length - 1 && (
-                  <div
-                    className="flex items-center px-8"
-                    style={{ height: `${spacerHeight}px` }}
-                  >
-                    <div className="bg-muted/30 border-muted/50 h-px w-full border-t border-dashed" />
-                  </div>
-                )}
-              </React.Fragment>
-            ))}
-
-            {hasExitRows && (
-              <div
-                className="flex items-center gap-2"
-                style={{ marginTop: `${verticalGap}px` }}
-              >
-                <div className="w-8 flex-shrink-0" />
-                {rows.map((row) => {
-                  const exitConfig = exitRowMap[row];
-                  if (exitConfig !== undefined) {
-                    return (
-                      <ContextMenu key={row}>
-                        <ContextMenuTrigger
-                          render={
-                            <div
-                              data-row={row}
-                              className="flex flex-shrink-0 cursor-context-menu items-center justify-center"
-                              style={{ width: `${seatSize + 8}px` }}
-                            />
-                          }
-                        >
-                          <span className="block max-w-full truncate text-center text-[9px] font-bold tracking-tight text-red-500 uppercase select-none">
-                            EXIT
-                          </span>
-                        </ContextMenuTrigger>
-                        <ContextMenuContent>
-                          <ContextMenuItem
-                            onClick={() => onDeleteEmergencyExit(exitConfig.id)}
-                            className="text-destructive focus:text-destructive gap-2"
+                            className="relative flex flex-shrink-0 items-center justify-center"
                           >
-                            <Trash2 className="h-4 w-4" />
-                            Delete Emergency Exit
-                          </ContextMenuItem>
-                        </ContextMenuContent>
-                      </ContextMenu>
-                    );
-                  }
-                  return (
+                            <SeatCell
+                              id={id}
+                              row={row}
+                              col={col}
+                              size={seatSize}
+                              equipment={equipment}
+                              selected={selectedSeats.includes(id)}
+                              onDeleteSeat={onDeleteSeat}
+                              onCustomizeLavSize={
+                                isLav ? () => onCustomizeLavSize(id) : undefined
+                              }
+                              style={
+                                isLav
+                                  ? {
+                                      height: `${lavHeight}px`,
+                                      width: `${seatSize}px`,
+                                      zIndex: 10,
+                                      position: "absolute",
+                                      top: 0,
+                                      left: "4px",
+                                    }
+                                  : undefined
+                              }
+                            />
+                          </div>
+                        );
+                      })}
+                    </div>
+                  ))}
+                  {groupIdx < colGroups.length - 1 && (
                     <div
-                      key={row}
-                      data-row={row}
-                      className="flex-shrink-0"
-                      style={{ width: `${seatSize + 8}px` }}
-                    />
-                  );
-                })}
-              </div>
-            )}
+                      className="flex items-center px-8"
+                      style={{ height: `${spacerHeight}px` }}
+                    >
+                      <div className="bg-muted/30 border-muted/50 h-px w-full border-t border-dashed" />
+                    </div>
+                  )}
+                </React.Fragment>
+              ))}
+            </div>
           </div>
         </div>
       </ContextMenuTrigger>

@@ -484,7 +484,7 @@ export default function AircraftConfig() {
       // Clear existing lav-occupied cells below this lav
       for (let i = colIndex - 1; i >= 0; i--) {
         if (current[`${row}-${labels[i]}`] === "lav-occupied")
-          // @ts-ignore
+          // @ts-expect-error - current is Record<string, string>
           delete current[`${row}-${labels[i]}`];
         else break;
       }
@@ -572,6 +572,8 @@ export default function AircraftConfig() {
     });
   };
 
+  const selectedRowNums = Array.from(new Set(selectedSeats.map(s => parseInt(s.split("-")[0]))));
+
   return (
     <TooltipProvider>
       <div className="bg-muted/50 min-h-screen p-6 font-sans text-slate-800">
@@ -615,6 +617,8 @@ export default function AircraftConfig() {
             onDeleteExitSection={handleDeleteExitSection}
             onSetExitSectionAlignment={handleSetExitSectionAlignment}
             wings={wings || null}
+            onEditWings={() => setShowAddWingDialog(true)}
+            onDeleteWings={() => setWings(null)}
             selectedSeats={selectedSeats}
             onSelectedSeatsChange={setSelectedSeats}
             onDeleteZone={handleDeleteZone}
@@ -631,6 +635,7 @@ export default function AircraftConfig() {
             onOpenChange={setShowAddEmergencyExitDialog}
             cabins={cabins || INITIAL_CABINS}
             onAddEmergencyExit={handleAddEmergencyExit}
+            defaultRow={selectedSeats.length > 0 ? selectedSeats[0].split("-")[0] : ""}
           />
           <AddWingDialog
             open={showAddWingDialog}
@@ -638,6 +643,7 @@ export default function AircraftConfig() {
             cabins={cabins || INITIAL_CABINS}
             wings={wings || null}
             onSave={(newWings) => setWings(newWings)}
+            selectedRows={selectedRowNums}
           />
           {pendingLavDrop !== null && (
             <AddLavSectionDialog

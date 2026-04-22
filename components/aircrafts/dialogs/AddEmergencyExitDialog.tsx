@@ -9,7 +9,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { CabinConfig, EmergencyExitConfig } from "../types";
 
 interface AddEmergencyExitDialogProps {
@@ -17,6 +17,7 @@ interface AddEmergencyExitDialogProps {
   onOpenChange: (open: boolean) => void;
   cabins: CabinConfig[];
   onAddEmergencyExit: (exit: EmergencyExitConfig) => void;
+  defaultRow?: string;
 }
 
 export const AddEmergencyExitDialog = ({
@@ -24,9 +25,16 @@ export const AddEmergencyExitDialog = ({
   onOpenChange,
   cabins,
   onAddEmergencyExit,
+  defaultRow = "",
 }: AddEmergencyExitDialogProps) => {
-  const [row, setRow] = useState("");
+  const [row, setRow] = useState(defaultRow);
   const [rowError, setRowError] = useState("");
+
+  useEffect(() => {
+    if (open && defaultRow) {
+      setRow(defaultRow);
+    }
+  }, [open, defaultRow]);
 
   const validate = () => {
     const rowNum = parseInt(row);

@@ -1,4 +1,12 @@
 "use client";
+import {
+  ContextMenu,
+  ContextMenuContent,
+  ContextMenuItem,
+  ContextMenuSeparator,
+  ContextMenuTrigger,
+} from "@/components/ui/context-menu";
+import { Settings2, Trash2 } from "lucide-react";
 import React, { useEffect, useState } from "react";
 import { CabinConfig, WingsConfig } from "../types";
 
@@ -6,9 +14,69 @@ interface WingsProps {
   wings: WingsConfig | null;
   containerRef: React.RefObject<HTMLDivElement | null>;
   cabins: CabinConfig[];
+  onEdit?: () => void;
+  onDelete?: () => void;
 }
 
-export const Wings = ({ wings, containerRef, cabins }: WingsProps) => {
+const WingContent = ({
+  type,
+  pos,
+  wingHeight,
+  onEdit,
+  onDelete,
+}: {
+  type: "left" | "right";
+  pos: { left: number; width: number; top: number; bottom: number };
+  wingHeight: number;
+  onEdit?: () => void;
+  onDelete?: () => void;
+}) => (
+  <ContextMenu>
+    <ContextMenuTrigger
+      render={
+        <div
+          className="absolute bg-[#D9D9D9] transition-all duration-300 cursor-context-menu hover:bg-gray-300"
+          style={{
+            left: `${pos.left}px`,
+            width: `${pos.width}px`,
+            top:
+              type === "right"
+                ? `${Math.max(0, pos.top - wingHeight)}px`
+                : `${pos.bottom}px`,
+            height: `${wingHeight}px`,
+            zIndex: 50,
+            clipPath:
+              type === "right"
+                ? "polygon(3% 0%, 100% 0%, 97% 100%, 0% 100%)"
+                : "polygon(0% 0%, 97% 0%, 100% 100%, 3% 100%)",
+          }}
+        />
+      }
+    />
+    <ContextMenuContent>
+      <ContextMenuItem onClick={onEdit} className="gap-2">
+        <Settings2 className="h-4 w-4" />
+        Edit Configure Wings
+      </ContextMenuItem>
+      <ContextMenuSeparator />
+      <ContextMenuItem
+        onClick={onDelete}
+        className="text-destructive focus:text-destructive gap-2"
+      >
+        <Trash2 className="h-4 w-4" />
+        Delete Wings
+      </ContextMenuItem>
+    </ContextMenuContent>
+  </ContextMenu>
+);
+
+export const Wings = ({
+  wings,
+  containerRef,
+  cabins,
+  onEdit,
+  onDelete,
+}: WingsProps) => {
   const [positions, setPositions] = useState<{
     left: { left: number; width: number; top: number; bottom: number } | null;
     right: { left: number; width: number; top: number; bottom: number } | null;
@@ -98,29 +166,21 @@ export const Wings = ({ wings, containerRef, cabins }: WingsProps) => {
   return (
     <>
       {positions.right && (
-        <div
-          className="pointer-events-none absolute bg-[#D9D9D9] transition-all duration-300"
-          style={{
-            left: `${positions.right.left}px`,
-            width: `${positions.right.width}px`,
-            top: `${Math.max(0, positions.right.top - wingHeight)}px`,
-            height: `${wingHeight}px`,
-            zIndex: 50,
-            clipPath: "polygon(3% 0%, 100% 0%, 97% 100%, 0% 100%)",
-          }}
+        <WingContent
+          type="right"
+          pos={positions.right}
+          wingHeight={wingHeight}
+          onEdit={onEdit}
+          onDelete={onDelete}
         />
       )}
       {positions.left && (
-        <div
-          className="pointer-events-none absolute bg-[#D9D9D9] transition-all duration-300"
-          style={{
-            left: `${positions.left.left}px`,
-            width: `${positions.left.width}px`,
-            top: `${positions.left.bottom}px`,
-            height: `${wingHeight}px`,
-            zIndex: 50,
-            clipPath: "polygon(0% 0%, 97% 0%, 100% 100%, 3% 100%)",
-          }}
+        <WingContent
+          type="left"
+          pos={positions.left}
+          wingHeight={wingHeight}
+          onEdit={onEdit}
+          onDelete={onDelete}
         />
       )}
     </>

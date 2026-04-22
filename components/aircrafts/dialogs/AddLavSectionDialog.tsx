@@ -54,14 +54,13 @@ export function AddLavSectionDialog({
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger
-        nativeButton={false}
+        nativeButton={true}
         render={(triggerProps) => {
-          const { nativeButton, ...props } = triggerProps as any;
           if (trigger) {
-            return React.cloneElement(trigger as React.ReactElement, props);
+            return React.cloneElement(trigger as React.ReactElement, triggerProps);
           }
           return (
-            <Button variant="outline" size="sm" className="gap-2" {...props}>
+            <Button variant="outline" size="sm" className="gap-2" {...triggerProps}>
               <Toilet className="h-4 w-4" />
               Add LAV
             </Button>

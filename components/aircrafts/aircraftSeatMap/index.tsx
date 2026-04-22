@@ -47,6 +47,8 @@ interface AircraftSeatMapProps {
   onDeleteExitSection: (id: string) => void;
   onSetExitSectionAlignment: (id: string, alignment: ExitAlignment) => void;
   wings: WingsConfig | null;
+  onEditWings: () => void;
+  onDeleteWings: () => void;
   selectedSeats: string[];
   onSelectedSeatsChange: (seats: string[]) => void;
   onDeleteZone: (id: string) => void;
@@ -74,6 +76,8 @@ export const AircraftSeatMap = ({
   onDeleteExitSection,
   onSetExitSectionAlignment,
   wings,
+  onEditWings,
+  onDeleteWings,
   selectedSeats,
   onSelectedSeatsChange,
   onDeleteZone,
@@ -271,6 +275,8 @@ export const AircraftSeatMap = ({
                   wings={wings}
                   containerRef={containerRef}
                   cabins={cabins}
+                  onEdit={onEditWings}
+                  onDelete={onDeleteWings}
                 />
                 {cabins.map((cabin, idx) => {
                   const slotExits = exitSections.filter(

@@ -19,6 +19,7 @@ interface AddWingDialogProps {
   cabins: CabinConfig[];
   wings: WingsConfig | null;
   onSave: (wings: WingsConfig | null) => void;
+  selectedRows?: number[];
 }
 
 export const AddWingDialog = ({
@@ -27,6 +28,7 @@ export const AddWingDialog = ({
   cabins,
   wings,
   onSave,
+  selectedRows = [],
 }: AddWingDialogProps) => {
   const [leftFrom, setLeftFrom] = useState("");
   const [leftTo, setLeftTo] = useState("");
@@ -40,16 +42,20 @@ export const AddWingDialog = ({
 
   useEffect(() => {
     if (open) {
-      const defaultFrom = Math.max(minRow, Math.floor((minRow + maxRow) / 2) - 1);
-      const defaultTo = Math.min(maxRow, defaultFrom + 2);
-      setLeftFrom(wings?.leftFromRow?.toString() ?? defaultFrom.toString());
-      setLeftTo(wings?.leftToRow?.toString() ?? defaultTo.toString());
-      setRightFrom(wings?.rightFromRow?.toString() ?? defaultFrom.toString());
-      setRightTo(wings?.rightToRow?.toString() ?? defaultTo.toString());
+      const defaultFromRow = selectedRows.length > 0 ? Math.min(...selectedRows) : Math.max(minRow, Math.floor((minRow + maxRow) / 2) - 1);
+      const defaultToRow = selectedRows.length > 0 ? Math.max(...selectedRows) : Math.min(maxRow, defaultFromRow + 2);
+
+      const defaultFrom = defaultFromRow.toString();
+      const defaultTo = defaultToRow.toString();
+
+      setLeftFrom(wings?.leftFromRow?.toString() ?? defaultFrom);
+      setLeftTo(wings?.leftToRow?.toString() ?? defaultTo);
+      setRightFrom(wings?.rightFromRow?.toString() ?? defaultFrom);
+      setRightTo(wings?.rightToRow?.toString() ?? defaultTo);
       setHeight(wings?.height?.toString() ?? "24");
       setErrors({});
     }
-  }, [open, wings, minRow, maxRow]);
+  }, [open, wings, minRow, maxRow, selectedRows]);
 
   const validate = () => {
     const next: Record<string, string> = {};
