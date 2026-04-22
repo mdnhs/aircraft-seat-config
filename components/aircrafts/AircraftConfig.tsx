@@ -246,10 +246,10 @@ export default function AircraftConfig() {
           } else if (toolId === "lav") {
             const [rowStr, col] = id.split("-");
             const row = parseInt(rowStr);
-
             const cabin = cabins?.find(
               (c) => row >= c.startRow && row <= c.endRow,
             );
+
             if (cabin) {
               const groups = cabin.seatFormat.split("-").map(Number);
               const totalCols = groups.reduce((a, b) => a + b, 0);
@@ -261,22 +261,25 @@ export default function AircraftConfig() {
                     );
 
               const colIndex = labels.indexOf(col);
-
-              // Spanning DOWN in UI means current seat and the one with LOWER index in labels array
-              if (colIndex > 0) {
-                const lowerCol = labels[colIndex - 1];
-                const lowerId = `${row}-${lowerCol}`;
-                newConfig[id] = "lav";
-                newConfig[lowerId] = "lav-occupied";
-              } else if (colIndex < labels.length - 1) {
-                // If we are at the very bottom (A), span UP by making the one above us the Primary
-                const upperCol = labels[colIndex + 1];
-                const upperId = `${row}-${upperCol}`;
-                newConfig[upperId] = "lav";
-                newConfig[id] = "lav-occupied";
+              if (colIndex !== -1) {
+                let currentStart = 0;
+                for (const gSize of groups) {
+                  if (colIndex >= currentStart && colIndex < currentStart + gSize) {
+                    // Requirement: fill the whole group "before walkway"
+                    for (let i = 0; i < gSize; i++) {
+                      const tId = `${row}-${labels[currentStart + i]}`;
+                      if (i === gSize - 1) newConfig[tId] = "lav";
+                      else newConfig[tId] = "lav-occupied";
+                    }
+                    break;
+                  }
+                  currentStart += gSize;
+                }
               } else {
-                newConfig[id] = "lav";
+                newConfig[id] = toolId;
               }
+            } else {
+              newConfig[id] = toolId;
             }
           } else {
             newConfig[id] = toolId;
@@ -481,6 +484,7 @@ export default function AircraftConfig() {
       // Clear existing lav-occupied cells below this lav
       for (let i = colIndex - 1; i >= 0; i--) {
         if (current[`${row}-${labels[i]}`] === "lav-occupied")
+          // @ts-ignore
           delete current[`${row}-${labels[i]}`];
         else break;
       }
