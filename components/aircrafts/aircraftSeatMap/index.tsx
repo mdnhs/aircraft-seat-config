@@ -53,6 +53,8 @@ interface AircraftSeatMapProps {
   onSelectedSeatsChange: (seats: string[]) => void;
   onDeleteZone: (id: string) => void;
   onUpdateZone: (id: string, updates: Partial<ZoneConfig>) => void;
+  reversedSeats: string[];
+  onReverseSeat: (seatId: string) => void;
 }
 
 export const AircraftSeatMap = ({
@@ -82,6 +84,8 @@ export const AircraftSeatMap = ({
   onSelectedSeatsChange,
   onDeleteZone,
   onUpdateZone,
+  reversedSeats,
+  onReverseSeat,
 }: AircraftSeatMapProps) => {
   const seatZoneMap = zones.reduce<
     Record<string, { id: string; name: string; color: string }>
@@ -199,7 +203,11 @@ export const AircraftSeatMap = ({
       if (seatConfig[`${row}-${labels[i]}`] === "lav-occupied") currentSize++;
       else break;
     }
-    setLavSizeDialog({ id: seatId, initialSize: currentSize, maxSize: colIndex + 1 });
+    setLavSizeDialog({
+      id: seatId,
+      initialSize: currentSize,
+      maxSize: colIndex + 1,
+    });
   };
 
   const handleRenameColumn = (label: string) => {
@@ -269,7 +277,7 @@ export const AircraftSeatMap = ({
             >
               <div
                 ref={containerRef}
-                className="scrollbar-thin scrollbar-thumb-muted-foreground/10 relative flex h-full items-center gap-8 overflow-x-auto"
+                className="scrollbar-thin scrollbar-thumb-muted-foreground/10 relative flex h-full items-center gap-4 overflow-x-auto"
               >
                 <Wings
                   wings={wings}
@@ -334,6 +342,8 @@ export const AircraftSeatMap = ({
                         onRenameZone={(id, currentName) =>
                           setRenamingZone({ id, currentName })
                         }
+                        reversedSeats={reversedSeats}
+                        onReverseSeat={onReverseSeat}
                       />
                     </React.Fragment>
                   );

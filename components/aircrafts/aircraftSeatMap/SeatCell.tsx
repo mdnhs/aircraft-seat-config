@@ -6,7 +6,7 @@ import {
   ContextMenuSeparator,
   ContextMenuTrigger,
 } from "@/components/ui/context-menu";
-import { Settings2, Trash2 } from "lucide-react";
+import { FlipHorizontal2, Settings2, Trash2 } from "lucide-react";
 import React from "react";
 import { Seat } from "./Seat";
 
@@ -17,7 +17,9 @@ interface SeatCellProps {
   size: number;
   equipment: string | undefined;
   selected: boolean;
+  reversed?: boolean;
   onDeleteSeat: (id: string) => void;
+  onReverseSeat?: () => void;
   onCustomizeLavSize?: () => void;
   style?: React.CSSProperties;
 }
@@ -29,7 +31,9 @@ export const SeatCell = ({
   size,
   equipment,
   selected,
+  reversed,
   onDeleteSeat,
+  onReverseSeat,
   onCustomizeLavSize,
   style,
 }: SeatCellProps) => {
@@ -73,6 +77,7 @@ export const SeatCell = ({
           }}
           className={`border-2 ${isLav ? "flex items-center justify-center" : ""}`}
           selected={selected}
+          reversed={reversed}
         />
       </ContextMenuTrigger>
       <ContextMenuContent>
@@ -84,6 +89,18 @@ export const SeatCell = ({
             >
               <Settings2 className="h-4 w-4" />
               Customize Size
+            </ContextMenuItem>
+            <ContextMenuSeparator />
+          </>
+        )}
+        {!isLav && !isRemoved && (
+          <>
+            <ContextMenuItem
+              onClick={() => onReverseSeat?.()}
+              className="gap-2"
+            >
+              <FlipHorizontal2 className="h-4 w-4" />
+              {selected ? "Reverse Selected Seats" : "Reverse Seat"}
             </ContextMenuItem>
             <ContextMenuSeparator />
           </>

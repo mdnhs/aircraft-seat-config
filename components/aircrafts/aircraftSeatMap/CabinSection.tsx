@@ -34,6 +34,8 @@ interface CabinSectionProps {
   ) => void;
   onDeleteZone: (id: string) => void;
   onRenameZone: (id: string, currentName: string) => void;
+  reversedSeats: string[];
+  onReverseSeat: (seatId: string) => void;
 }
 
 type ZoneSpan = {
@@ -59,6 +61,8 @@ export const CabinSection = ({
   onRenameRow,
   onDeleteZone,
   onRenameZone,
+  reversedSeats,
+  onReverseSeat,
 }: CabinSectionProps) => {
   const rows = Array.from(
     { length: cabin.endRow - cabin.startRow + 1 },
@@ -192,18 +196,21 @@ export const CabinSection = ({
   return (
     <ContextMenu>
       <ContextMenuTrigger
-        render={<div className="group/cabin flex h-100 items-stretch gap-3" />}
+        render={<div className="group/cabin flex h-100 items-stretch" />}
       >
-        <div className="border-border/30 bg-muted/10 group-hover/cabin:bg-muted/20 flex w-8 items-center justify-center rounded-l-xl border-l-2 transition-colors">
+        <div className="flex w-8 items-center justify-center rounded-l-xl border-l-2 border-blue-400/40 bg-blue-500/10 transition-colors group-hover/cabin:bg-blue-500/15">
           <span
-            className="text-muted-foreground/30 text-[10px] font-black tracking-[0.4em] whitespace-nowrap uppercase select-none"
+            className="text-[9px] font-black tracking-[0.35em] whitespace-nowrap text-blue-600/80 uppercase select-none"
             style={{ writingMode: "vertical-lr", transform: "rotate(180deg)" }}
           >
             {cabin.label}
           </span>
         </div>
 
-        <div className="border-border/60 bg-background flex flex-col justify-center rounded-3xl border p-3 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)] transition-shadow hover:shadow-[0_8px_30px_-4px_rgba(0,0,0,0.08)]">
+        <div
+          data-cabin-card
+          className="border-border/60 bg-background flex flex-col justify-center rounded-l-none rounded-r-3xl border border-l-0 p-3 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)] transition-shadow hover:shadow-[0_8px_30px_-4px_rgba(0,0,0,0.08)]"
+        >
           <div
             className="relative flex flex-col"
             style={{ gap: `${verticalGap}px` }}
@@ -302,7 +309,7 @@ export const CabinSection = ({
                     }
                   >
                     {exitRowMap[row] !== undefined ? (
-                      <div className="flex h-full w-full items-center justify-center rounded border border-red-300/60 bg-red-50/80">
+                      <div className="flex h-full w-full items-center justify-center">
                         <span className="text-[8px] font-black tracking-widest text-red-500 uppercase select-none">
                           EXIT
                         </span>
@@ -477,7 +484,9 @@ export const CabinSection = ({
                               size={seatSize}
                               equipment={equipment}
                               selected={selectedSeats.includes(id)}
+                              reversed={reversedSeats.includes(id)}
                               onDeleteSeat={onDeleteSeat}
+                              onReverseSeat={() => onReverseSeat(id)}
                               onCustomizeLavSize={
                                 isLav ? () => onCustomizeLavSize(id) : undefined
                               }
@@ -524,7 +533,7 @@ export const CabinSection = ({
                     style={{ width: `${rowColWidths[idx]}px` }}
                   >
                     {exitRowMap[row] !== undefined && (
-                      <div className="flex h-full w-full items-center justify-center rounded border border-red-300/60 bg-red-50/80">
+                      <div className="flex h-full w-full items-center justify-center">
                         <span className="text-[8px] font-black tracking-widest text-red-500 uppercase select-none">
                           EXIT
                         </span>

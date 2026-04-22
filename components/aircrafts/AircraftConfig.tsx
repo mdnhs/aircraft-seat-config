@@ -153,6 +153,10 @@ export default function AircraftConfig() {
     `exitSections${deckSuffix}`,
     parseAsCompressedJson<ExitSectionConfig[]>().withDefault([]),
   );
+  const [reversedSeats, setReversedSeats] = useQueryState<string[]>(
+    `reversed${deckSuffix}`,
+    parseAsCompressedJson<string[]>().withDefault([]),
+  );
   const [exitMode, setExitMode] = useState(false);
   const [wings, setWings] = useQueryState<WingsConfig>(
     `wings${deckSuffix}`,
@@ -588,6 +592,20 @@ export default function AircraftConfig() {
     });
   };
 
+  const handleReverseSeat = (seatId: string) => {
+    const targets = selectedSeats.includes(seatId) ? selectedSeats : [seatId];
+    setReversedSeats((prev) => {
+      const current = new Set(prev || []);
+      const allReversed = targets.every((id) => current.has(id));
+      if (allReversed) {
+        targets.forEach((id) => current.delete(id));
+      } else {
+        targets.forEach((id) => current.add(id));
+      }
+      return [...current];
+    });
+  };
+
   const selectedRowNums = Array.from(new Set(selectedSeats.map(s => parseInt(s.split("-")[0]))));
 
   return (
@@ -641,6 +659,8 @@ export default function AircraftConfig() {
             onSelectedSeatsChange={setSelectedSeats}
             onDeleteZone={handleDeleteZone}
             onUpdateZone={handleUpdateZone}
+            reversedSeats={reversedSeats || []}
+            onReverseSeat={handleReverseSeat}
           />
           <AddZoneDialog
             open={showAddZoneDialog}

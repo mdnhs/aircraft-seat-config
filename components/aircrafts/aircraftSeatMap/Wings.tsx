@@ -122,17 +122,22 @@ export const Wings = ({
           maxBottom = Math.max(maxBottom, relativeBottom);
         });
 
-        const seatEl = allEls[0] as HTMLElement;
-        const cabinEl = seatEl.closest(".rounded-3xl");
+        let cabinTop = Infinity;
+        let cabinBottom = -Infinity;
 
-        let cabinTop = minTop;
-        let cabinBottom = maxBottom;
+        allEls.forEach((el) => {
+          const wrapper = (el as HTMLElement)
+            .closest("[data-cabin-card]")
+            ?.parentElement;
+          if (wrapper) {
+            const r = wrapper.getBoundingClientRect();
+            cabinTop = Math.min(cabinTop, r.top - containerRect.top);
+            cabinBottom = Math.max(cabinBottom, r.bottom - containerRect.top);
+          }
+        });
 
-        if (cabinEl) {
-          const rect = cabinEl.getBoundingClientRect();
-          cabinTop = rect.top - containerRect.top;
-          cabinBottom = rect.bottom - containerRect.top;
-        }
+        if (cabinTop === Infinity) cabinTop = minTop;
+        if (cabinBottom === -Infinity) cabinBottom = maxBottom;
 
         return {
           left: minLeft,
