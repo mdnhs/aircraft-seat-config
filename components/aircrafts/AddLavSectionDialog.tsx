@@ -17,15 +17,26 @@ interface AddLavSectionDialogProps {
   onAddLavSection: (lav: LavSectionConfig, position: number) => void;
   position: number;
   trigger?: React.ReactNode;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
 }
 
 export function AddLavSectionDialog({
   onAddLavSection,
   position,
   trigger,
+  open: controlledOpen,
+  onOpenChange: controlledOnOpenChange,
 }: AddLavSectionDialogProps) {
-  const [open, setOpen] = useState(false);
+  const [internalOpen, setInternalOpen] = useState(false);
+  const isControlled = controlledOpen !== undefined;
+  const open = isControlled ? controlledOpen : internalOpen;
+  const setOpen = isControlled ? (controlledOnOpenChange ?? setInternalOpen) : setInternalOpen;
   const [size, setSize] = useState(2);
+
+  React.useEffect(() => {
+    if (open) setSize(2);
+  }, [open]);
 
   const handleApply = () => {
     onAddLavSection(

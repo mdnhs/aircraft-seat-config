@@ -9,14 +9,16 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
-import { REG_NO, TOTAL_SEATS } from "./constants";
+import { REG_NO } from "./constants";
 import PlaneInfo from "../svg/PlaneInfo";
 
 interface AircraftHeaderProps {
+  totalSeats: number;
   availableSeats: number;
+  blockedSeats: number;
 }
 
-export const AircraftHeader = ({ availableSeats }: AircraftHeaderProps) => {
+export const AircraftHeader = ({ totalSeats, availableSeats, blockedSeats }: AircraftHeaderProps) => {
   return (
     <Card className="mb-4 overflow-hidden border-gray-100 py-0 shadow-sm">
       <CardContent className="p-5">
@@ -34,14 +36,23 @@ export const AircraftHeader = ({ availableSeats }: AircraftHeaderProps) => {
                 Total Seats
               </p>
               <p className="text-xl leading-7 font-semibold text-[#1558F6]">
-                {TOTAL_SEATS}
+                {totalSeats}
               </p>
             </div>
+            {blockedSeats > 0 && (
+              <div className="text-start">
+                <p className="mb-1 text-sm leading-5 font-medium text-[#667386] uppercase">
+                  Blocked Seats
+                </p>
+                <p className="text-xl leading-7 font-semibold text-[#F04438]">
+                  {blockedSeats}
+                </p>
+              </div>
+            )}
             <div className="text-start">
               <p className="mb-1 text-sm leading-5 font-medium text-[#667386] uppercase">
                 Available Seats
               </p>
-
               <p className="text-xl leading-7 font-semibold text-[#17B26A]">
                 {availableSeats}
               </p>

@@ -28,6 +28,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { useDndContext, useDroppable } from "@dnd-kit/core";
 import SelectionArea from "@viselect/vanilla";
 import {
   AlignCenter,
@@ -41,7 +42,6 @@ import {
 } from "lucide-react";
 import React, { useEffect, useRef, useState } from "react";
 import { AddCabinDialog } from "./AddCabinDialog";
-import { AddLavSectionDialog } from "./AddLavSectionDialog";
 import { DraggableTool } from "./DraggableTool";
 import { Seat } from "./Seat";
 import { TOOLS } from "./constants";
@@ -819,6 +819,35 @@ const Wings = ({ wings, containerRef, cabins }: WingsProps) => {
   );
 };
 
+const LavSlotDropZone = ({
+  position,
+  lavCount,
+}: {
+  position: number;
+  lavCount: number;
+}) => {
+  const { active } = useDndContext();
+  const isLavDragging = active?.id === "lav";
+  const { setNodeRef, isOver } = useDroppable({
+    id: `lav-slot-${position}`,
+    disabled: !isLavDragging || lavCount >= 2,
+  });
+  if (!isLavDragging || lavCount >= 2) return null;
+  return (
+    <div
+      ref={setNodeRef}
+      title="Drop LAV here"
+      className={`flex h-10 w-10 items-center justify-center rounded-xl border-2 border-dashed transition-all ${
+        isOver
+          ? "scale-110 border-emerald-500 bg-emerald-100 text-emerald-600 shadow-md"
+          : "border-emerald-300 bg-emerald-50/60 text-emerald-400"
+      }`}
+    >
+      <Toilet className="h-5 w-5" />
+    </div>
+  );
+};
+
 // ─── AircraftSeatMap ──────────────────────────────────────────────────────────
 
 interface AircraftSeatMapProps {
@@ -833,7 +862,6 @@ interface AircraftSeatMapProps {
   onUpdateCabin: (id: string, updates: Partial<CabinConfig>) => void;
   onDeleteSeat: (id: string) => void;
   onSetLavSize: (seatId: string, size: number) => void;
-  onAddLavSection: (lav: LavSectionConfig, position: number) => void;
   onDeleteLavSection: (id: string) => void;
   onSetLavSectionSize: (id: string, size: number) => void;
   onSetLavSectionAlignment: (id: string, alignment: LavAlignment) => void;
@@ -859,7 +887,6 @@ export const AircraftSeatMap = ({
   onUpdateCabin,
   onDeleteSeat,
   onSetLavSize,
-  onAddLavSection,
   onDeleteLavSection,
   onSetLavSectionSize,
   onSetLavSectionAlignment,
@@ -1396,7 +1423,6 @@ export const AircraftSeatMap = ({
     position,
     cabins,
     onAddCabin,
-    onAddLavSection,
     lavCountAtPosition,
     exitMode,
     exitCountAtPosition,
@@ -1405,7 +1431,6 @@ export const AircraftSeatMap = ({
     position: number;
     cabins: CabinConfig[];
     onAddCabin: (cabin: CabinConfig) => void;
-    onAddLavSection: (lav: LavSectionConfig, position: number) => void;
     lavCountAtPosition: number;
     exitMode: boolean;
     exitCountAtPosition: number;
@@ -1426,18 +1451,7 @@ export const AircraftSeatMap = ({
         }
       />
       {lavCountAtPosition < 2 && (
-        <AddLavSectionDialog
-          onAddLavSection={onAddLavSection}
-          position={position}
-          trigger={
-            <div
-              title="Add LAV"
-              className="border-border text-muted-foreground group flex h-10 w-10 cursor-pointer items-center justify-center rounded-xl border-2 shadow-sm transition-all hover:border-emerald-400 hover:bg-emerald-50/50 hover:text-emerald-500 hover:shadow-md"
-            >
-              <Toilet className="h-5 w-5 transition-transform group-hover:scale-110" />
-            </div>
-          }
-        />
+        <LavSlotDropZone position={position} lavCount={lavCountAtPosition} />
       )}
       {exitMode && exitCountAtPosition < 2 && (
         <button
@@ -1500,7 +1514,6 @@ export const AircraftSeatMap = ({
                         position={idx}
                         cabins={cabins}
                         onAddCabin={onAddCabin}
-                        onAddLavSection={onAddLavSection}
                         lavCountAtPosition={slotLavs.length}
                         exitMode={exitMode}
                         exitCountAtPosition={slotExits.length}
@@ -1586,7 +1599,6 @@ export const AircraftSeatMap = ({
                   position={cabins.length}
                   cabins={cabins}
                   onAddCabin={onAddCabin}
-                  onAddLavSection={onAddLavSection}
                   lavCountAtPosition={
                     lavSections.filter((l) => l.position === cabins.length)
                       .length
