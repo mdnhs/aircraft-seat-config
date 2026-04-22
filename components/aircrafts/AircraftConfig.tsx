@@ -11,7 +11,7 @@ import {
   useSensors,
 } from "@dnd-kit/core";
 import { parseAsInteger, useQueryState } from "nuqs";
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { AddEmergencyExitDialog } from "./dialogs/AddEmergencyExitDialog";
 import { AddLavSectionDialog } from "./dialogs/AddLavSectionDialog";
 import { AddWingDialog } from "./dialogs/AddWingDialog";
@@ -192,6 +192,56 @@ export default function AircraftConfig() {
     });
     return () => cancelAnimationFrame(id);
   }, []);
+
+  const handleDeleteSeat = useCallback(
+    (seatId: string) => {
+      setSeatConfig((prev) => {
+        const newConfig = { ...(prev || {}) };
+        const currentTool = newConfig[seatId];
+
+        if (currentTool === "lav" || currentTool === "lav-occupied") {
+          const [rowStr, col] = seatId.split("-");
+          const row = parseInt(rowStr);
+          const cabin = cabins?.find(
+            (c) => row >= c.startRow && row <= c.endRow,
+          );
+          if (cabin) {
+            const groups = cabin.seatFormat.split("-").map(Number);
+            const totalCols = groups.reduce((a, b) => a + b, 0);
+            const labels =
+              cabin.customLabels && cabin.customLabels.length === totalCols
+                ? cabin.customLabels
+                : Array.from({ length: totalCols }, (_, i) =>
+                    String.fromCharCode(65 + i),
+                  );
+            deleteLavGroup(newConfig, row, col, labels);
+          }
+          return newConfig;
+        }
+
+        newConfig[seatId] = "removed";
+        return newConfig;
+      });
+    },
+    [cabins, setSeatConfig],
+  );
+
+  const handleReverseSeat = useCallback(
+    (seatId: string) => {
+      const targets = selectedSeats.includes(seatId) ? selectedSeats : [seatId];
+      setReversedSeats((prev) => {
+        const current = new Set(prev || []);
+        const allReversed = targets.every((id) => current.has(id));
+        if (allReversed) {
+          targets.forEach((id) => current.delete(id));
+        } else {
+          targets.forEach((id) => current.add(id));
+        }
+        return [...current];
+      });
+    },
+    [selectedSeats, setReversedSeats],
+  );
 
   const handleDragStart = (event: DragStartEvent) => {
     setActiveId(event.active.id as string);
@@ -562,48 +612,6 @@ export default function AircraftConfig() {
       ...(prev || []),
       { id: exit.id, row: exit.row },
     ]);
-  };
-
-  const handleDeleteSeat = (seatId: string) => {
-    setSeatConfig((prev) => {
-      const newConfig = { ...(prev || {}) };
-      const currentTool = newConfig[seatId];
-
-      if (currentTool === "lav" || currentTool === "lav-occupied") {
-        const [rowStr, col] = seatId.split("-");
-        const row = parseInt(rowStr);
-        const cabin = cabins?.find((c) => row >= c.startRow && row <= c.endRow);
-        if (cabin) {
-          const groups = cabin.seatFormat.split("-").map(Number);
-          const totalCols = groups.reduce((a, b) => a + b, 0);
-          const labels =
-            cabin.customLabels && cabin.customLabels.length === totalCols
-              ? cabin.customLabels
-              : Array.from({ length: totalCols }, (_, i) =>
-                  String.fromCharCode(65 + i),
-                );
-          deleteLavGroup(newConfig, row, col, labels);
-        }
-        return newConfig;
-      }
-
-      newConfig[seatId] = "removed";
-      return newConfig;
-    });
-  };
-
-  const handleReverseSeat = (seatId: string) => {
-    const targets = selectedSeats.includes(seatId) ? selectedSeats : [seatId];
-    setReversedSeats((prev) => {
-      const current = new Set(prev || []);
-      const allReversed = targets.every((id) => current.has(id));
-      if (allReversed) {
-        targets.forEach((id) => current.delete(id));
-      } else {
-        targets.forEach((id) => current.add(id));
-      }
-      return [...current];
-    });
   };
 
   const selectedRowNums = Array.from(new Set(selectedSeats.map(s => parseInt(s.split("-")[0]))));

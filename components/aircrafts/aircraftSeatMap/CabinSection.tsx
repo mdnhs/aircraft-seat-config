@@ -7,14 +7,14 @@ import {
   ContextMenuTrigger,
 } from "@/components/ui/context-menu";
 import { Settings2, Trash2 } from "lucide-react";
-import React from "react";
+import React, { useMemo } from "react";
 import { CabinConfig, EmergencyExitConfig, SeatConfig } from "../types";
 import { SeatCell } from "./SeatCell";
 
 interface CabinSectionProps {
   cabin: CabinConfig;
   seatConfig: SeatConfig;
-  selectedSeats: string[];
+  selectedSet: Set<string>;
   seatZoneMap: Record<string, { id: string; name: string; color: string }>;
   emergencyExits: EmergencyExitConfig[];
   onDeleteEmergencyExit: (id: string) => void;
@@ -34,8 +34,9 @@ interface CabinSectionProps {
   ) => void;
   onDeleteZone: (id: string) => void;
   onRenameZone: (id: string, currentName: string) => void;
-  reversedSeats: string[];
+  reversedSet: Set<string>;
   onReverseSeat: (seatId: string) => void;
+  showLabel?: boolean;
 }
 
 type ZoneSpan = {
@@ -46,10 +47,10 @@ type ZoneSpan = {
   length: number;
 };
 
-export const CabinSection = ({
+const CabinSectionComponent = ({
   cabin,
   seatConfig,
-  selectedSeats,
+  selectedSet,
   seatZoneMap,
   emergencyExits,
   onDeleteEmergencyExit,
@@ -61,79 +62,105 @@ export const CabinSection = ({
   onRenameRow,
   onDeleteZone,
   onRenameZone,
-  reversedSeats,
+  reversedSet,
   onReverseSeat,
+  showLabel = true,
 }: CabinSectionProps) => {
-  const rows = Array.from(
-    { length: cabin.endRow - cabin.startRow + 1 },
-    (_, i) => cabin.startRow + i,
+  const rows = useMemo(
+    () =>
+      Array.from(
+        { length: cabin.endRow - cabin.startRow + 1 },
+        (_, i) => cabin.startRow + i,
+      ),
+    [cabin.startRow, cabin.endRow],
   );
 
-  const exitRowMap = emergencyExits.reduce<Record<number, EmergencyExitConfig>>(
-    (acc, e) => {
-      acc[e.row] = e;
-      return acc;
-    },
-    {},
+  const exitRowMap = useMemo(
+    () =>
+      emergencyExits.reduce<Record<number, EmergencyExitConfig>>((acc, e) => {
+        acc[e.row] = e;
+        return acc;
+      }, {}),
+    [emergencyExits],
   );
 
-  let labelCount = 0;
-  const rowLabels = rows.map((row, idx) => {
-    if (exitRowMap[row] !== undefined) return "";
-    if (cabin.customRowLabels && cabin.customRowLabels[idx]) {
-      return cabin.customRowLabels[idx];
-    }
-    const label = String(cabin.startRow + labelCount).padStart(2, "0");
-    labelCount++;
-    return label;
-  });
+  const rowLabels = useMemo(() => {
+    let labelCount = 0;
+    return rows.map((row, idx) => {
+      if (exitRowMap[row] !== undefined) return "";
+      if (cabin.customRowLabels && cabin.customRowLabels[idx]) {
+        return cabin.customRowLabels[idx];
+      }
+      const label = String(cabin.startRow + labelCount).padStart(2, "0");
+      labelCount++;
+      return label;
+    });
+  }, [rows, exitRowMap, cabin.customRowLabels, cabin.startRow]);
 
-  const groups = cabin.seatFormat.split("-").map(Number);
-  const totalCols = groups.reduce((a, b) => a + b, 0);
+  const groups = useMemo(
+    () => cabin.seatFormat.split("-").map(Number),
+    [cabin.seatFormat],
+  );
+  const totalCols = useMemo(
+    () => groups.reduce((a, b) => a + b, 0),
+    [groups],
+  );
 
-  const containerPadding = 48;
-  const labelHeight = 20;
-  const numSpacers = groups.length - 1;
+  const { seatSize, verticalGap, spacerHeight } = useMemo(() => {
+    const containerPadding = 48;
+    const labelHeight = 20;
+    const numSpacers = groups.length - 1;
 
-  const availableHeight = 400 - containerPadding - labelHeight;
-  const multiplier = 1.2 * totalCols + 0.7 * numSpacers;
-  const calculatedSeatSize = Math.floor(availableHeight / multiplier);
+    const availableHeight = 400 - containerPadding - labelHeight;
+    const multiplier = 1.2 * totalCols + 0.7 * numSpacers;
+    const calculatedSeatSize = Math.floor(availableHeight / multiplier);
 
-  const seatSize = Math.min(40, Math.max(20, calculatedSeatSize));
-  const verticalGap = Math.max(4, Math.floor(seatSize * 0.2));
-  const spacerHeight = Math.max(8, Math.floor(seatSize * 0.5));
+    const seatSize = Math.min(40, Math.max(20, calculatedSeatSize));
+    const verticalGap = Math.max(4, Math.floor(seatSize * 0.2));
+    const spacerHeight = Math.max(8, Math.floor(seatSize * 0.5));
+    return { seatSize, verticalGap, spacerHeight };
+  }, [groups, totalCols]);
 
   const EXIT_COL_WIDTH = 20;
-  const rowColWidths = rows.map((row) =>
-    exitRowMap[row] !== undefined ? EXIT_COL_WIDTH : seatSize + 8,
-  );
-  // Cumulative left edge of each column (relative to flex row start, excluding label column)
-  const rowLeftEdges = rowColWidths.reduce<number[]>((acc, _, idx) => {
-    acc.push(idx === 0 ? 0 : acc[idx - 1] + rowColWidths[idx - 1] + 8);
-    return acc;
-  }, []);
-
-  const allLabels =
-    cabin.customLabels && cabin.customLabels.length === totalCols
-      ? cabin.customLabels
-      : Array.from({ length: totalCols }, (_, i) =>
-          String.fromCharCode(65 + i),
-        );
-
-  const reversedLabels = [...allLabels].reverse();
-
-  const hasExitRows = rows.some((r) => exitRowMap[r] !== undefined);
-
-  const colGroups = [...groups].reverse().reduce(
-    (acc, groupSize) => {
-      const start = acc.nextIndex;
-      const groupLabels = reversedLabels.slice(start, start + groupSize);
-      acc.groups.push(groupLabels);
-      acc.nextIndex += groupSize;
+  const { rowColWidths, rowLeftEdges } = useMemo(() => {
+    const widths = rows.map((row) =>
+      exitRowMap[row] !== undefined ? EXIT_COL_WIDTH : seatSize + 8,
+    );
+    const edges = widths.reduce<number[]>((acc, _, idx) => {
+      acc.push(idx === 0 ? 0 : acc[idx - 1] + widths[idx - 1] + 8);
       return acc;
-    },
-    { groups: [] as string[][], nextIndex: 0 },
-  ).groups;
+    }, []);
+    return { rowColWidths: widths, rowLeftEdges: edges };
+  }, [rows, exitRowMap, seatSize]);
+
+  const allLabels = useMemo(
+    () =>
+      cabin.customLabels && cabin.customLabels.length === totalCols
+        ? cabin.customLabels
+        : Array.from({ length: totalCols }, (_, i) =>
+            String.fromCharCode(65 + i),
+          ),
+    [cabin.customLabels, totalCols],
+  );
+
+  const hasExitRows = useMemo(
+    () => rows.some((r) => exitRowMap[r] !== undefined),
+    [rows, exitRowMap],
+  );
+
+  const colGroups = useMemo(() => {
+    const reversedLabels = [...allLabels].reverse();
+    return [...groups].reverse().reduce(
+      (acc, groupSize) => {
+        const start = acc.nextIndex;
+        const groupLabels = reversedLabels.slice(start, start + groupSize);
+        acc.groups.push(groupLabels);
+        acc.nextIndex += groupSize;
+        return acc;
+      },
+      { groups: [] as string[][], nextIndex: 0 },
+    ).groups;
+  }, [allLabels, groups]);
 
   const getLavHeight = (mainCol: string, lavSize: number): number => {
     let gi = -1,
@@ -169,47 +196,50 @@ export const CabinSection = ({
     return totalHeight;
   };
 
-  const rowZones = rows.map((row) => {
-    for (const col of allLabels) {
-      const z = seatZoneMap[`${row}-${col}`];
-      if (z) return z;
-    }
-    return null;
-  });
-
-  const zoneSpans = rowZones.reduce<ZoneSpan[]>((spans, rz, idx) => {
-    const last = spans[spans.length - 1];
-    if (rz && last && last.id === rz.id) {
-      last.length += 1;
-    } else if (rz) {
-      spans.push({
-        id: rz.id,
-        name: rz.name,
-        color: rz.color,
-        startIdx: idx,
-        length: 1,
-      });
-    }
-    return spans;
-  }, []);
+  const zoneSpans = useMemo(() => {
+    const rowZones = rows.map((row) => {
+      for (const col of allLabels) {
+        const z = seatZoneMap[`${row}-${col}`];
+        if (z) return z;
+      }
+      return null;
+    });
+    return rowZones.reduce<ZoneSpan[]>((spans, rz, idx) => {
+      const last = spans[spans.length - 1];
+      if (rz && last && last.id === rz.id) {
+        last.length += 1;
+      } else if (rz) {
+        spans.push({
+          id: rz.id,
+          name: rz.name,
+          color: rz.color,
+          startIdx: idx,
+          length: 1,
+        });
+      }
+      return spans;
+    }, []);
+  }, [rows, allLabels, seatZoneMap]);
 
   return (
     <ContextMenu>
       <ContextMenuTrigger
         render={<div className="group/cabin flex h-100 items-stretch" />}
       >
-        <div className="flex w-8 items-center justify-center rounded-l-xl border-l-2 border-blue-400/40 bg-blue-500/10 transition-colors group-hover/cabin:bg-blue-500/15">
-          <span
-            className="text-[9px] font-black tracking-[0.35em] whitespace-nowrap text-blue-600/80 uppercase select-none"
-            style={{ writingMode: "vertical-lr", transform: "rotate(180deg)" }}
-          >
-            {cabin.label}
-          </span>
-        </div>
+        {showLabel && (
+          <div className="flex w-8 items-center justify-center rounded-l-xl border-l-2 border-blue-400/40 bg-blue-500/10 transition-colors group-hover/cabin:bg-blue-500/15">
+            <span
+              className="text-[9px] font-black tracking-[0.35em] whitespace-nowrap text-blue-600/80 uppercase select-none"
+              style={{ writingMode: "vertical-lr", transform: "rotate(180deg)" }}
+            >
+              {cabin.label}
+            </span>
+          </div>
+        )}
 
         <div
           data-cabin-card
-          className="border-border/60 bg-background flex flex-col justify-center rounded-l-none rounded-r-3xl border border-l-0 p-3 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)] transition-shadow hover:shadow-[0_8px_30px_-4px_rgba(0,0,0,0.08)]"
+          className={`border-border/60 bg-background flex flex-col justify-center rounded-r-3xl border p-3 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)] transition-shadow hover:shadow-[0_8px_30px_-4px_rgba(0,0,0,0.08)] ${showLabel ? "rounded-l-none border-l-0" : "rounded-l-3xl"}`}
         >
           <div
             className="relative flex flex-col"
@@ -483,12 +513,12 @@ export const CabinSection = ({
                               col={col}
                               size={seatSize}
                               equipment={equipment}
-                              selected={selectedSeats.includes(id)}
-                              reversed={reversedSeats.includes(id)}
+                              selected={selectedSet.has(id)}
+                              reversed={reversedSet.has(id)}
                               onDeleteSeat={onDeleteSeat}
-                              onReverseSeat={() => onReverseSeat(id)}
+                              onReverseSeat={isLav ? undefined : onReverseSeat}
                               onCustomizeLavSize={
-                                isLav ? () => onCustomizeLavSize(id) : undefined
+                                isLav ? onCustomizeLavSize : undefined
                               }
                               style={
                                 isLav
@@ -563,3 +593,5 @@ export const CabinSection = ({
     </ContextMenu>
   );
 };
+
+export const CabinSection = React.memo(CabinSectionComponent);

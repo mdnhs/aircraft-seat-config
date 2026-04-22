@@ -19,12 +19,12 @@ interface SeatCellProps {
   selected: boolean;
   reversed?: boolean;
   onDeleteSeat: (id: string) => void;
-  onReverseSeat?: () => void;
-  onCustomizeLavSize?: () => void;
+  onReverseSeat?: (id: string) => void;
+  onCustomizeLavSize?: (id: string) => void;
   style?: React.CSSProperties;
 }
 
-export const SeatCell = ({
+const SeatCellComponent = ({
   id,
   row,
   col,
@@ -84,7 +84,7 @@ export const SeatCell = ({
         {isLav && (
           <>
             <ContextMenuItem
-              onClick={() => onCustomizeLavSize?.()}
+              onClick={() => onCustomizeLavSize?.(id)}
               className="gap-2"
             >
               <Settings2 className="h-4 w-4" />
@@ -96,7 +96,7 @@ export const SeatCell = ({
         {!isLav && !isRemoved && (
           <>
             <ContextMenuItem
-              onClick={() => onReverseSeat?.()}
+              onClick={() => onReverseSeat?.(id)}
               className="gap-2"
             >
               <FlipHorizontal2 className="h-4 w-4" />
@@ -117,3 +117,5 @@ export const SeatCell = ({
     </ContextMenu>
   );
 };
+
+export const SeatCell = React.memo(SeatCellComponent);

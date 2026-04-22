@@ -54,14 +54,7 @@ const SeatSvg = ({
   </svg>
 );
 
-export const Seat = ({
-  id,
-  equipment,
-  className,
-  style,
-  selected,
-  reversed,
-}: {
+interface SeatProps {
   id: string;
   row: number;
   col: string;
@@ -70,7 +63,16 @@ export const Seat = ({
   style?: React.CSSProperties;
   selected?: boolean;
   reversed?: boolean;
-}) => {
+}
+
+const SeatComponent = ({
+  id,
+  equipment,
+  className,
+  style,
+  selected,
+  reversed,
+}: SeatProps) => {
   const { setNodeRef, isOver } = useDroppable({ id });
   const isRemoved = equipment === "removed";
   const isLav = equipment === "lav";
@@ -162,3 +164,5 @@ export const Seat = ({
     </div>
   );
 };
+
+export const Seat = React.memo(SeatComponent);

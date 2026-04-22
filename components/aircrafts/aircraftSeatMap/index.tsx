@@ -2,7 +2,7 @@
 import { Card, CardContent } from "@/components/ui/card";
 import SelectionArea from "@viselect/vanilla";
 import Image from "next/image";
-import React, { useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { DraggableTool } from "./DraggableTool";
 import { TOOLS } from "../constants";
 import {
@@ -87,14 +87,22 @@ export const AircraftSeatMap = ({
   reversedSeats,
   onReverseSeat,
 }: AircraftSeatMapProps) => {
-  const seatZoneMap = zones.reduce<
-    Record<string, { id: string; name: string; color: string }>
-  >((map, zone) => {
-    zone.seatIds.forEach((id) => {
-      map[id] = { id: zone.id, name: zone.name, color: zone.color };
-    });
-    return map;
-  }, {});
+  const seatZoneMap = useMemo(
+    () =>
+      zones.reduce<Record<string, { id: string; name: string; color: string }>>(
+        (map, zone) => {
+          zone.seatIds.forEach((id) => {
+            map[id] = { id: zone.id, name: zone.name, color: zone.color };
+          });
+          return map;
+        },
+        {},
+      ),
+    [zones],
+  );
+
+  const selectedSet = useMemo(() => new Set(selectedSeats), [selectedSeats]);
+  const reversedSet = useMemo(() => new Set(reversedSeats), [reversedSeats]);
 
   const [lavSizeDialog, setLavSizeDialog] = useState<{
     id: string;
@@ -164,18 +172,23 @@ export const AircraftSeatMap = ({
       return true;
     });
 
-    selectionRef.current.on("move", ({ store: { selected } }) => {
+    let lastKeysSignature = "";
+    const pushKeys = (selected: Element[]) => {
       const keys = selected
         .map((el) => el.getAttribute("data-key"))
         .filter((k): k is string => k !== null);
+      const signature = keys.length + "|" + keys.join(",");
+      if (signature === lastKeysSignature) return;
+      lastKeysSignature = signature;
       onChangeRef.current(keys);
+    };
+
+    selectionRef.current.on("move", ({ store: { selected } }) => {
+      pushKeys(selected);
     });
 
     selectionRef.current.on("stop", ({ store: { selected } }) => {
-      const keys = selected
-        .map((el) => el.getAttribute("data-key"))
-        .filter((k): k is string => k !== null);
-      onChangeRef.current(keys);
+      pushKeys(selected);
     });
 
     return () => {
@@ -184,31 +197,55 @@ export const AircraftSeatMap = ({
     };
   }, []);
 
-  const handleCustomizeLavSize = (seatId: string) => {
-    const [rowStr, col] = seatId.split("-");
-    const row = parseInt(rowStr);
-    const cabin = cabins.find((c) => row >= c.startRow && row <= c.endRow);
-    if (!cabin) return;
-    const groups = cabin.seatFormat.split("-").map(Number);
-    const totalCols = groups.reduce((a, b) => a + b, 0);
-    const labels =
-      cabin.customLabels && cabin.customLabels.length === totalCols
-        ? cabin.customLabels
-        : Array.from({ length: totalCols }, (_, i) =>
-            String.fromCharCode(65 + i),
-          );
-    const colIndex = labels.indexOf(col);
-    let currentSize = 1;
-    for (let i = colIndex - 1; i >= 0; i--) {
-      if (seatConfig[`${row}-${labels[i]}`] === "lav-occupied") currentSize++;
-      else break;
-    }
-    setLavSizeDialog({
-      id: seatId,
-      initialSize: currentSize,
-      maxSize: colIndex + 1,
-    });
-  };
+  const handleCustomizeLavSize = useCallback(
+    (seatId: string) => {
+      const [rowStr, col] = seatId.split("-");
+      const row = parseInt(rowStr);
+      const cabin = cabins.find((c) => row >= c.startRow && row <= c.endRow);
+      if (!cabin) return;
+      const groups = cabin.seatFormat.split("-").map(Number);
+      const totalCols = groups.reduce((a, b) => a + b, 0);
+      const labels =
+        cabin.customLabels && cabin.customLabels.length === totalCols
+          ? cabin.customLabels
+          : Array.from({ length: totalCols }, (_, i) =>
+              String.fromCharCode(65 + i),
+            );
+      const colIndex = labels.indexOf(col);
+      let currentSize = 1;
+      for (let i = colIndex - 1; i >= 0; i--) {
+        if (seatConfig[`${row}-${labels[i]}`] === "lav-occupied") currentSize++;
+        else break;
+      }
+      setLavSizeDialog({
+        id: seatId,
+        initialSize: currentSize,
+        maxSize: colIndex + 1,
+      });
+    },
+    [cabins, seatConfig],
+  );
+
+  const handleRequestRenameColumn = useCallback(
+    (cabinId: string, colIndex: number, currentLabel: string) => {
+      setRenamingColumn({ cabinId, colIndex, currentLabel });
+    },
+    [],
+  );
+
+  const handleRequestRenameRow = useCallback(
+    (cabinId: string, rowIndex: number, currentLabel: string) => {
+      setRenamingRow({ cabinId, rowIndex, currentLabel });
+    },
+    [],
+  );
+
+  const handleRequestRenameZone = useCallback(
+    (id: string, currentName: string) => {
+      setRenamingZone({ id, currentName });
+    },
+    [],
+  );
 
   const handleRenameColumn = (label: string) => {
     if (!renamingColumn) return;
@@ -327,23 +364,18 @@ export const AircraftSeatMap = ({
                         onDelete={onDeleteCabin}
                         onEditCabin={setEditingCabin}
                         onDeleteSeat={onDeleteSeat}
-                        selectedSeats={selectedSeats}
+                        selectedSet={selectedSet}
                         seatZoneMap={seatZoneMap}
                         emergencyExits={emergencyExits}
                         onDeleteEmergencyExit={onDeleteEmergencyExit}
                         onCustomizeLavSize={handleCustomizeLavSize}
-                        onRenameColumn={(cabinId, colIndex, currentLabel) =>
-                          setRenamingColumn({ cabinId, colIndex, currentLabel })
-                        }
-                        onRenameRow={(cabinId, rowIndex, currentLabel) =>
-                          setRenamingRow({ cabinId, rowIndex, currentLabel })
-                        }
+                        onRenameColumn={handleRequestRenameColumn}
+                        onRenameRow={handleRequestRenameRow}
                         onDeleteZone={onDeleteZone}
-                        onRenameZone={(id, currentName) =>
-                          setRenamingZone({ id, currentName })
-                        }
-                        reversedSeats={reversedSeats}
+                        onRenameZone={handleRequestRenameZone}
+                        reversedSet={reversedSet}
                         onReverseSeat={onReverseSeat}
+                        showLabel={idx === 0 || cabins[idx - 1].label !== cabin.label}
                       />
                     </React.Fragment>
                   );
