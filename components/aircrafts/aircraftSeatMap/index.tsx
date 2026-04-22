@@ -17,12 +17,12 @@ import {
   ZoneConfig,
 } from "../types";
 import { CabinSection } from "./CabinSection";
-import { EditCabinDialog } from "./EditCabinDialog";
+import { EditCabinDialog } from "../dialogs/EditCabinDialog";
 import { ExitSlot } from "./ExitSlot";
 import { LavSectionSizeDialog } from "./LavSectionSizeDialog";
 import { LavSizeDialog } from "./LavSizeDialog";
 import { LavSlot } from "./LavSlot";
-import { RenameLabelDialog } from "./RenameLabelDialog";
+import { RenameLabelDialog } from "../dialogs/RenameLabelDialog";
 import { SlotInserter } from "./SlotInserter";
 import { Wings } from "./Wings";
 

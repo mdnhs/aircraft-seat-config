@@ -46,7 +46,7 @@ aircraft-seat-config/
 │   │   ├── AircraftConfig.tsx     # Root state component: DndContext, nuqs state, cabin CRUD
 │   │   ├── AircraftHeader.tsx     # Aircraft metadata display (type, reg, seat counts)
 │   │   ├── AircraftToolbar.tsx    # Tab nav: Zones / Wing / Exit Row / Emergency Exit (UI only)
-│   │   ├── AircraftSeatMap.tsx    # Cabin grid renderer, EditCabinDialog, EditLabelsDialog
+│   │   ├── AircraftSeatMap.tsx    # Cabin grid renderer
 │   │   ├── Seat.tsx               # Droppable seat cell with equipment icon + selection state
 │   │   ├── DraggableTool.tsx      # Draggable tool palette item (left sidebar)
 │   │   └── AddCabinDialog.tsx     # Add/insert cabin dialog with Zod validation
@@ -130,7 +130,7 @@ Dialog/editing state lives locally inside `AircraftSeatMap.tsx`.
 
 ### Column Labels
 - Default labels derived from `seatFormat` (A, B, C... with gaps for aisles)
-- Per-cabin custom labels editable via `EditLabelsDialog`
+- Per-cabin custom labels editable via `RenameLabelDialog`
 
 ---
 

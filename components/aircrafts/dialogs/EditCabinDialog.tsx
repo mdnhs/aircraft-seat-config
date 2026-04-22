@@ -19,7 +19,7 @@ import {
 } from "@/components/ui/select";
 import { useEffect, useState } from "react";
 import { CabinConfig } from "../types";
-import { cabinSchema } from "./schemas";
+import { cabinSchema } from "../aircraftSeatMap/schemas";
 
 interface EditCabinDialogProps {
   cabin: CabinConfig | null;
