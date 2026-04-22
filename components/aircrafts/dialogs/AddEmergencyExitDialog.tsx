@@ -10,7 +10,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useState } from "react";
-import { CabinConfig, EmergencyExitConfig } from "./types";
+import { CabinConfig, EmergencyExitConfig } from "../types";
 
 interface AddEmergencyExitDialogProps {
   open: boolean;
@@ -86,9 +86,7 @@ export const AddEmergencyExitDialog = ({
               className={rowError ? "border-destructive" : ""}
               autoFocus
             />
-            {rowError && (
-              <p className="text-destructive text-xs">{rowError}</p>
-            )}
+            {rowError && <p className="text-destructive text-xs">{rowError}</p>}
           </div>
         </div>
         <DialogFooter>

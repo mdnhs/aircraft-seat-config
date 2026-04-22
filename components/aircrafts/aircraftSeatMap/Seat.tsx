@@ -1,7 +1,7 @@
 "use client";
 import { useDroppable } from "@dnd-kit/core";
 import React from "react";
-import { TOOLS } from "./constants";
+import { TOOLS } from "../constants";
 
 export const Seat = ({
   id,
@@ -32,9 +32,9 @@ export const Seat = ({
       data-key={id}
       style={style}
       className={`seat-selectable relative flex flex-shrink-0 items-center justify-center rounded-lg border-2 transition-all
-        ${isOver ? "bg-accent border-primary z-20 scale-110 shadow-md" : isRemoved ? "border-transparent bg-transparent" : "bg-background border-border"} 
-        ${selected ? "border-blue-500 bg-blue-50 ring-2 ring-blue-500 ring-offset-2" : ""} 
-        ${equipment && !isRemoved ? "bg-primary/5 border-primary/30" : ""} 
+        ${isOver ? "bg-accent border-primary z-20 scale-110 shadow-md" : isRemoved ? "border-transparent bg-transparent" : "bg-background border-border"}
+        ${selected ? "border-blue-500 bg-blue-50 ring-2 ring-blue-500 ring-offset-2" : ""}
+        ${equipment && !isRemoved ? "bg-primary/5 border-primary/30" : ""}
         ${className || ""} `}
     >
       {equipment && !isRemoved ? (

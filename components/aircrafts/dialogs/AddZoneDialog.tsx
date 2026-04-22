@@ -10,7 +10,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useState } from "react";
-import { ZoneConfig } from "./types";
+import { ZoneConfig } from "../types";
 
 const ZONE_COLORS = [
   { label: "Red", value: "#EF4444" },

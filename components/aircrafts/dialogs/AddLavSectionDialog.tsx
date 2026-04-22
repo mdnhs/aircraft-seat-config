@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/dialog";
 import { Toilet } from "lucide-react";
 import React, { useState } from "react";
-import { LavSectionConfig } from "./types";
+import { LavSectionConfig } from "../types";
 
 interface AddLavSectionDialogProps {
   onAddLavSection: (lav: LavSectionConfig, position: number) => void;

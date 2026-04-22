@@ -5,7 +5,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { useDraggable } from "@dnd-kit/core";
-import { Tool } from "./types";
+import { Tool } from "../types";
 
 export const DraggableTool = ({ tool }: { tool: Tool }) => {
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({

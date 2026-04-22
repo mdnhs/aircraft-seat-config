@@ -12,16 +12,26 @@ import {
 } from "@dnd-kit/core";
 import { useQueryState } from "nuqs";
 import React, { useEffect, useState } from "react";
-import { parseAsCompressedJson } from "./parsers";
+import { AddEmergencyExitDialog } from "./dialogs/AddEmergencyExitDialog";
+import { AddLavSectionDialog } from "./dialogs/AddLavSectionDialog";
+import { AddWingDialog } from "./dialogs/AddWingDialog";
+import { AddZoneDialog } from "./dialogs/AddZoneDialog";
 import { AircraftHeader } from "./AircraftHeader";
-import { AircraftSeatMap } from "./AircraftSeatMap";
+import { AircraftSeatMap } from "./aircraftSeatMap";
 import { AircraftToolbar } from "./AircraftToolbar";
-import { AddZoneDialog } from "./AddZoneDialog";
-import { AddEmergencyExitDialog } from "./AddEmergencyExitDialog";
-import { AddLavSectionDialog } from "./AddLavSectionDialog";
-import { AddWingDialog } from "./AddWingDialog";
-import { TOOLS, TOTAL_SEATS } from "./constants";
-import { CabinConfig, EmergencyExitConfig, ExitAlignment, ExitSectionConfig, LavAlignment, LavSectionConfig, SeatConfig, WingsConfig, ZoneConfig } from "./types";
+import { TOOLS } from "./constants";
+import { parseAsCompressedJson } from "./parsers";
+import {
+  CabinConfig,
+  EmergencyExitConfig,
+  ExitAlignment,
+  ExitSectionConfig,
+  LavAlignment,
+  LavSectionConfig,
+  SeatConfig,
+  WingsConfig,
+  ZoneConfig,
+} from "./types";
 
 const INITIAL_CABINS: CabinConfig[] = [];
 
@@ -123,10 +133,9 @@ export default function AircraftConfig() {
     "zones",
     parseAsCompressedJson<ZoneConfig[]>().withDefault([]),
   );
-  const [emergencyExits, setEmergencyExits] = useQueryState<EmergencyExitConfig[]>(
-    "exits",
-    parseAsCompressedJson<EmergencyExitConfig[]>().withDefault([]),
-  );
+  const [emergencyExits, setEmergencyExits] = useQueryState<
+    EmergencyExitConfig[]
+  >("exits", parseAsCompressedJson<EmergencyExitConfig[]>().withDefault([]));
   const [lavSections, setLavSections] = useQueryState<LavSectionConfig[]>(
     "lavs",
     parseAsCompressedJson<LavSectionConfig[]>().withDefault([]),
@@ -142,8 +151,11 @@ export default function AircraftConfig() {
   );
   const [showAddWingDialog, setShowAddWingDialog] = useState(false);
   const [showAddZoneDialog, setShowAddZoneDialog] = useState(false);
-  const [showAddEmergencyExitDialog, setShowAddEmergencyExitDialog] = useState(false);
-  const [pendingLavDrop, setPendingLavDrop] = useState<{ position: number } | null>(null);
+  const [showAddEmergencyExitDialog, setShowAddEmergencyExitDialog] =
+    useState(false);
+  const [pendingLavDrop, setPendingLavDrop] = useState<{
+    position: number;
+  } | null>(null);
   const [activeId, setActiveId] = React.useState<string | null>(null);
 
   const sensors = useSensors(
@@ -192,13 +204,18 @@ export default function AircraftConfig() {
             if (currentTool === "lav" || currentTool === "lav-occupied") {
               const [rowStr, col] = id.split("-");
               const row = parseInt(rowStr);
-              const cabin = cabins?.find((c) => row >= c.startRow && row <= c.endRow);
+              const cabin = cabins?.find(
+                (c) => row >= c.startRow && row <= c.endRow,
+              );
               if (cabin) {
                 const groups = cabin.seatFormat.split("-").map(Number);
                 const totalCols = groups.reduce((a, b) => a + b, 0);
-                const labels = cabin.customLabels && cabin.customLabels.length === totalCols
-                  ? cabin.customLabels
-                  : Array.from({ length: totalCols }, (_, i) => String.fromCharCode(65 + i));
+                const labels =
+                  cabin.customLabels && cabin.customLabels.length === totalCols
+                    ? cabin.customLabels
+                    : Array.from({ length: totalCols }, (_, i) =>
+                        String.fromCharCode(65 + i),
+                      );
                 deleteLavGroup(newConfig, row, col, labels);
               }
             } else {
@@ -209,13 +226,18 @@ export default function AircraftConfig() {
             if (currentTool === "lav" || currentTool === "lav-occupied") {
               const [rowStr, col] = id.split("-");
               const row = parseInt(rowStr);
-              const cabin = cabins?.find((c) => row >= c.startRow && row <= c.endRow);
+              const cabin = cabins?.find(
+                (c) => row >= c.startRow && row <= c.endRow,
+              );
               if (cabin) {
                 const groups = cabin.seatFormat.split("-").map(Number);
                 const totalCols = groups.reduce((a, b) => a + b, 0);
-                const labels = cabin.customLabels && cabin.customLabels.length === totalCols
-                  ? cabin.customLabels
-                  : Array.from({ length: totalCols }, (_, i) => String.fromCharCode(65 + i));
+                const labels =
+                  cabin.customLabels && cabin.customLabels.length === totalCols
+                    ? cabin.customLabels
+                    : Array.from({ length: totalCols }, (_, i) =>
+                        String.fromCharCode(65 + i),
+                      );
                 deleteLavGroup(newConfig, row, col, labels);
               }
             } else {
@@ -224,17 +246,22 @@ export default function AircraftConfig() {
           } else if (toolId === "lav") {
             const [rowStr, col] = id.split("-");
             const row = parseInt(rowStr);
-            
-            const cabin = cabins?.find((c) => row >= c.startRow && row <= c.endRow);
+
+            const cabin = cabins?.find(
+              (c) => row >= c.startRow && row <= c.endRow,
+            );
             if (cabin) {
               const groups = cabin.seatFormat.split("-").map(Number);
               const totalCols = groups.reduce((a, b) => a + b, 0);
-              const labels = cabin.customLabels && cabin.customLabels.length === totalCols
-                ? cabin.customLabels
-                : Array.from({ length: totalCols }, (_, i) => String.fromCharCode(65 + i));
-              
+              const labels =
+                cabin.customLabels && cabin.customLabels.length === totalCols
+                  ? cabin.customLabels
+                  : Array.from({ length: totalCols }, (_, i) =>
+                      String.fromCharCode(65 + i),
+                    );
+
               const colIndex = labels.indexOf(col);
-              
+
               // Spanning DOWN in UI means current seat and the one with LOWER index in labels array
               if (colIndex > 0) {
                 const lowerCol = labels[colIndex - 1];
@@ -282,8 +309,12 @@ export default function AircraftConfig() {
     (v) => v === "lav" || v === "lav-occupied",
   ).length;
   const totalSeats = structuralSeats - lavCount;
-  const blockedSeats = Object.values(config).filter((v) => v === "block").length;
-  const removedSeats = Object.values(config).filter((v) => v === "removed").length;
+  const blockedSeats = Object.values(config).filter(
+    (v) => v === "block",
+  ).length;
+  const removedSeats = Object.values(config).filter(
+    (v) => v === "removed",
+  ).length;
   const availableSeats = totalSeats - blockedSeats - removedSeats;
   const activeTool = TOOLS.find((t) => t.id === activeId);
 
@@ -323,7 +354,8 @@ export default function AircraftConfig() {
             // Was before the deleted cabin — move to end of previous slot (or stay at 0)
             return { ...l, position: Math.max(0, removedIdx - 1) };
           }
-          if (l.position > removedIdx) return { ...l, position: l.position - 1 };
+          if (l.position > removedIdx)
+            return { ...l, position: l.position - 1 };
           return l;
         }),
       );
@@ -332,7 +364,8 @@ export default function AircraftConfig() {
           if (e.position === removedIdx) {
             return { ...e, position: Math.max(0, removedIdx - 1) };
           }
-          if (e.position > removedIdx) return { ...e, position: e.position - 1 };
+          if (e.position > removedIdx)
+            return { ...e, position: e.position - 1 };
           return e;
         }),
       );
@@ -347,10 +380,14 @@ export default function AircraftConfig() {
       if (existing.length === 1) {
         const existingAlign = existing[0].alignment ?? "center";
         // Ensure first LAV gets a side; new LAV gets the opposite
-        const firstAlignment: LavAlignment = existingAlign === "left" ? "left" : "right";
-        const secondAlignment: LavAlignment = firstAlignment === "right" ? "left" : "right";
+        const firstAlignment: LavAlignment =
+          existingAlign === "left" ? "left" : "right";
+        const secondAlignment: LavAlignment =
+          firstAlignment === "right" ? "left" : "right";
         return current
-          .map((l) => l.id === existing[0].id ? { ...l, alignment: firstAlignment } : l)
+          .map((l) =>
+            l.id === existing[0].id ? { ...l, alignment: firstAlignment } : l,
+          )
           .concat({ ...lav, alignment: secondAlignment });
       }
       return [...current, lav];
@@ -367,7 +404,10 @@ export default function AircraftConfig() {
     );
   };
 
-  const handleSetLavSectionAlignment = (id: string, alignment: LavAlignment) => {
+  const handleSetLavSectionAlignment = (
+    id: string,
+    alignment: LavAlignment,
+  ) => {
     setLavSections((prev) =>
       (prev || []).map((l) => (l.id === id ? { ...l, alignment } : l)),
     );
@@ -387,7 +427,11 @@ export default function AircraftConfig() {
             : "right";
       return [
         ...current,
-        { id: Math.random().toString(36).substring(7), position, alignment: newAlignment },
+        {
+          id: Math.random().toString(36).substring(7),
+          position,
+          alignment: newAlignment,
+        },
       ];
     });
   };
@@ -396,7 +440,10 @@ export default function AircraftConfig() {
     setExitSections((prev) => (prev || []).filter((e) => e.id !== id));
   };
 
-  const handleSetExitSectionAlignment = (id: string, alignment: ExitAlignment) => {
+  const handleSetExitSectionAlignment = (
+    id: string,
+    alignment: ExitAlignment,
+  ) => {
     setExitSections((prev) =>
       (prev || []).map((e) => (e.id === id ? { ...e, alignment } : e)),
     );
@@ -477,7 +524,10 @@ export default function AircraftConfig() {
         return next;
       });
     }
-    setEmergencyExits((prev) => [...(prev || []), { id: exit.id, row: exit.row }]);
+    setEmergencyExits((prev) => [
+      ...(prev || []),
+      { id: exit.id, row: exit.row },
+    ]);
   };
 
   const handleDeleteSeat = (seatId: string) => {
@@ -492,9 +542,12 @@ export default function AircraftConfig() {
         if (cabin) {
           const groups = cabin.seatFormat.split("-").map(Number);
           const totalCols = groups.reduce((a, b) => a + b, 0);
-          const labels = cabin.customLabels && cabin.customLabels.length === totalCols
-            ? cabin.customLabels
-            : Array.from({ length: totalCols }, (_, i) => String.fromCharCode(65 + i));
+          const labels =
+            cabin.customLabels && cabin.customLabels.length === totalCols
+              ? cabin.customLabels
+              : Array.from({ length: totalCols }, (_, i) =>
+                  String.fromCharCode(65 + i),
+                );
           deleteLavGroup(newConfig, row, col, labels);
         }
         return newConfig;
@@ -514,7 +567,11 @@ export default function AircraftConfig() {
           onDragEnd={handleDragEnd}
           collisionDetection={rectIntersection}
         >
-          <AircraftHeader totalSeats={totalSeats} availableSeats={availableSeats} blockedSeats={blockedSeats} />
+          <AircraftHeader
+            totalSeats={totalSeats}
+            availableSeats={availableSeats}
+            blockedSeats={blockedSeats}
+          />
           <AircraftToolbar
             selectedSeats={selectedSeats}
             onZoneClick={() => setShowAddZoneDialog(true)}
@@ -569,7 +626,9 @@ export default function AircraftConfig() {
           {pendingLavDrop !== null && (
             <AddLavSectionDialog
               open={pendingLavDrop !== null}
-              onOpenChange={(o) => { if (!o) setPendingLavDrop(null); }}
+              onOpenChange={(o) => {
+                if (!o) setPendingLavDrop(null);
+              }}
               position={pendingLavDrop.position}
               onAddLavSection={(lav) =>
                 handleAddLavSection({ ...lav, alignment: "left" })

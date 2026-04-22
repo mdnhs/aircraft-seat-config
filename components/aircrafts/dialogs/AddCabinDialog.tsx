@@ -21,7 +21,7 @@ import {
 } from "@/components/ui/select";
 import { Plus } from "lucide-react";
 import React, { useEffect, useState } from "react";
-import { CabinConfig } from "./types";
+import { CabinConfig } from "../types";
 import { z } from "zod";
 
 const cabinSchema = z.object({
@@ -137,7 +137,7 @@ export function AddCabinDialog({
         <DialogHeader>
           <DialogTitle>Add Cabin</DialogTitle>
           <DialogDescription>
-            {isBetween 
+            {isBetween
               ? "Insert a new cabin between existing ones. Row numbers will be updated automatically."
               : "Add a new cabin to the aircraft."}
           </DialogDescription>
