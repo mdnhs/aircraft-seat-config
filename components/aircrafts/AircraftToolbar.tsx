@@ -83,6 +83,8 @@ interface AircraftToolbarProps {
   onWingClick: () => void;
   exitMode: boolean;
   onExitModeToggle: () => void;
+  activeDeck: 1 | 2;
+  onDeckChange: (deck: 1 | 2) => void;
 }
 
 export const AircraftToolbar = ({
@@ -92,6 +94,8 @@ export const AircraftToolbar = ({
   onWingClick,
   exitMode,
   onExitModeToggle,
+  activeDeck,
+  onDeckChange,
 }: AircraftToolbarProps) => {
   const [active, setActive] = useState<number | null>(null);
 
@@ -116,9 +120,30 @@ export const AircraftToolbar = ({
 
   return (
     <div className="flex items-center justify-between rounded-t-xl border border-b-0 border-gray-100 bg-white px-6 py-3">
-      <span className="text-muted-foreground text-[11px] font-bold tracking-widest uppercase">
-        Aircraft Seat Configuration
-      </span>
+      <div className="flex items-center gap-4">
+        <span className="text-muted-foreground text-[11px] font-bold tracking-widest uppercase">
+          Aircraft Seat Configuration
+        </span>
+        <div className="flex items-center gap-0.5 rounded-full border border-gray-200 bg-white p-0.5">
+          {[1, 2].map((deck) => {
+            const isActive = activeDeck === deck;
+            return (
+              <button
+                key={deck}
+                type="button"
+                onClick={() => onDeckChange(deck as 1 | 2)}
+                className={`cursor-pointer rounded-full px-3 py-1 text-[10px] font-bold tracking-wide uppercase transition-colors ${
+                  isActive
+                    ? "bg-blue-50 text-blue-600"
+                    : "text-gray-400 hover:bg-gray-100 hover:text-gray-700"
+                }`}
+              >
+                Deck {deck}
+              </button>
+            );
+          })}
+        </div>
+      </div>
       <div className="flex w-fit items-center gap-1 rounded-full border border-gray-200 bg-white px-1.5 py-1.5">
         {tabs.map((tab, idx) => {
           const isExitTab = tab.label === "Exit";

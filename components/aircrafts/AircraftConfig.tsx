@@ -10,7 +10,7 @@ import {
   useSensor,
   useSensors,
 } from "@dnd-kit/core";
-import { useQueryState } from "nuqs";
+import { parseAsInteger, useQueryState } from "nuqs";
 import React, { useEffect, useState } from "react";
 import { AddEmergencyExitDialog } from "./dialogs/AddEmergencyExitDialog";
 import { AddLavSectionDialog } from "./dialogs/AddLavSectionDialog";
@@ -121,34 +121,50 @@ function recalculateRows(
 export default function AircraftConfig() {
   const [mounted, setMounted] = useState(false);
   const [selectedSeats, setSelectedSeats] = useState<string[]>([]);
+  const [deckRaw, setDeckRaw] = useQueryState(
+    "deck",
+    parseAsInteger.withDefault(1),
+  );
+  const activeDeck: 1 | 2 = deckRaw === 2 ? 2 : 1;
+  const deckSuffix = activeDeck === 2 ? "2" : "";
   const [seatConfig, setSeatConfig] = useQueryState<SeatConfig>(
-    "config",
+    `config${deckSuffix}`,
     parseAsCompressedJson<SeatConfig>().withDefault({}),
   );
   const [cabins, setCabins] = useQueryState<CabinConfig[]>(
-    "cabins",
+    `cabins${deckSuffix}`,
     parseAsCompressedJson<CabinConfig[]>().withDefault(INITIAL_CABINS),
   );
   const [zones, setZones] = useQueryState<ZoneConfig[]>(
-    "zones",
+    `zones${deckSuffix}`,
     parseAsCompressedJson<ZoneConfig[]>().withDefault([]),
   );
   const [emergencyExits, setEmergencyExits] = useQueryState<
     EmergencyExitConfig[]
-  >("exits", parseAsCompressedJson<EmergencyExitConfig[]>().withDefault([]));
+  >(
+    `exits${deckSuffix}`,
+    parseAsCompressedJson<EmergencyExitConfig[]>().withDefault([]),
+  );
   const [lavSections, setLavSections] = useQueryState<LavSectionConfig[]>(
-    "lavs",
+    `lavs${deckSuffix}`,
     parseAsCompressedJson<LavSectionConfig[]>().withDefault([]),
   );
   const [exitSections, setExitSections] = useQueryState<ExitSectionConfig[]>(
-    "exitSections",
+    `exitSections${deckSuffix}`,
     parseAsCompressedJson<ExitSectionConfig[]>().withDefault([]),
   );
   const [exitMode, setExitMode] = useState(false);
   const [wings, setWings] = useQueryState<WingsConfig>(
-    "wings",
+    `wings${deckSuffix}`,
     parseAsCompressedJson<WingsConfig>(),
   );
+
+  const handleDeckChange = (deck: 1 | 2) => {
+    if (deck === activeDeck) return;
+    setSelectedSeats([]);
+    setExitMode(false);
+    setDeckRaw(deck);
+  };
   const [showAddWingDialog, setShowAddWingDialog] = useState(false);
   const [showAddZoneDialog, setShowAddZoneDialog] = useState(false);
   const [showAddEmergencyExitDialog, setShowAddEmergencyExitDialog] =
@@ -595,6 +611,8 @@ export default function AircraftConfig() {
             onWingClick={() => setShowAddWingDialog(true)}
             exitMode={exitMode}
             onExitModeToggle={() => setExitMode((v) => !v)}
+            activeDeck={activeDeck}
+            onDeckChange={handleDeckChange}
           />
           <AircraftSeatMap
             seatConfig={seatConfig || {}}

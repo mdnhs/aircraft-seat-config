@@ -8,12 +8,7 @@ import {
 } from "@/components/ui/context-menu";
 import { Settings2, Trash2 } from "lucide-react";
 import React from "react";
-import {
-  CabinConfig,
-  EmergencyExitConfig,
-  SeatConfig,
-  ZoneConfig,
-} from "../types";
+import { CabinConfig, EmergencyExitConfig, SeatConfig } from "../types";
 import { SeatCell } from "./SeatCell";
 
 interface CabinSectionProps {
@@ -104,6 +99,16 @@ export const CabinSection = ({
   const verticalGap = Math.max(4, Math.floor(seatSize * 0.2));
   const spacerHeight = Math.max(8, Math.floor(seatSize * 0.5));
 
+  const EXIT_COL_WIDTH = 20;
+  const rowColWidths = rows.map((row) =>
+    exitRowMap[row] !== undefined ? EXIT_COL_WIDTH : seatSize + 8,
+  );
+  // Cumulative left edge of each column (relative to flex row start, excluding label column)
+  const rowLeftEdges = rowColWidths.reduce<number[]>((acc, _, idx) => {
+    acc.push(idx === 0 ? 0 : acc[idx - 1] + rowColWidths[idx - 1] + 8);
+    return acc;
+  }, []);
+
   const allLabels =
     cabin.customLabels && cabin.customLabels.length === totalCols
       ? cabin.customLabels
@@ -125,10 +130,6 @@ export const CabinSection = ({
     },
     { groups: [] as string[][], nextIndex: 0 },
   ).groups;
-
-  const firstCol = colGroups[0]?.[0];
-  const lastGroup = colGroups[colGroups.length - 1];
-  const lastCol = lastGroup?.[lastGroup.length - 1];
 
   const getLavHeight = (mainCol: string, lavSize: number): number => {
     let gi = -1,
@@ -191,9 +192,7 @@ export const CabinSection = ({
   return (
     <ContextMenu>
       <ContextMenuTrigger
-        render={
-          <div className="group/cabin flex h-[400px] items-stretch gap-3" />
-        }
+        render={<div className="group/cabin flex h-100 items-stretch gap-3" />}
       >
         <div className="border-border/30 bg-muted/10 group-hover/cabin:bg-muted/20 flex w-8 items-center justify-center rounded-l-xl border-l-2 transition-colors">
           <span
@@ -210,11 +209,13 @@ export const CabinSection = ({
             style={{ gap: `${verticalGap}px` }}
           >
             {zoneSpans.map((span) => {
-              const cellWidth = seatSize + 8;
-              const gapWidth = 8;
-              const left = 40 + span.startIdx * (cellWidth + gapWidth) - 4;
+              const endIdx = span.startIdx + span.length - 1;
+              const left = 40 + rowLeftEdges[span.startIdx] - 4;
               const width =
-                span.length * cellWidth + (span.length - 1) * gapWidth + 8;
+                rowLeftEdges[endIdx] +
+                rowColWidths[endIdx] -
+                rowLeftEdges[span.startIdx] +
+                8;
               return (
                 <div
                   key={`zone-bg-${span.id}-${span.startIdx}`}
@@ -233,14 +234,15 @@ export const CabinSection = ({
                 className="relative flex items-center gap-2"
                 style={{ height: "20px", marginBottom: "2px" }}
               >
-                <div className="w-8 flex-shrink-0" />
+                <div className="w-8 shrink-0" />
                 <div className="relative flex-1" style={{ height: "20px" }}>
                   {zoneSpans.map((span) => {
-                    const cellWidth = seatSize + 8;
-                    const gapWidth = 8;
-                    const left = span.startIdx * (cellWidth + gapWidth);
+                    const endIdx = span.startIdx + span.length - 1;
+                    const left = rowLeftEdges[span.startIdx];
                     const width =
-                      span.length * cellWidth + (span.length - 1) * gapWidth;
+                      rowLeftEdges[endIdx] +
+                      rowColWidths[endIdx] -
+                      rowLeftEdges[span.startIdx];
                     return (
                       <ContextMenu key={`${span.id}-${span.startIdx}`}>
                         <ContextMenuTrigger
@@ -287,21 +289,29 @@ export const CabinSection = ({
               className="flex items-center gap-2"
               style={{ marginBottom: `${verticalGap}px` }}
             >
-              <div className="w-8 flex-shrink-0" />
+              <div className="w-8 shrink-0" />
               {rows.map((row, idx) => (
                 <ContextMenu key={row}>
                   <ContextMenuTrigger
                     render={
                       <div
                         data-row={row}
-                        className="flex-shrink-0 cursor-context-menu"
-                        style={{ width: `${seatSize + 8}px` }}
+                        className="shrink-0 cursor-context-menu"
+                        style={{ width: `${rowColWidths[idx]}px` }}
                       />
                     }
                   >
-                    <span className="text-muted-foreground/40 block text-center text-[10px] font-bold transition-colors select-none hover:text-blue-500">
-                      {exitRowMap[row] === undefined ? rowLabels[idx] : ""}
-                    </span>
+                    {exitRowMap[row] !== undefined ? (
+                      <div className="flex h-full w-full items-center justify-center rounded border border-red-300/60 bg-red-50/80">
+                        <span className="text-[8px] font-black tracking-widest text-red-500 uppercase select-none">
+                          EXIT
+                        </span>
+                      </div>
+                    ) : (
+                      <span className="text-muted-foreground/40 block text-center text-[10px] font-bold transition-colors select-none hover:text-blue-500">
+                        {rowLabels[idx]}
+                      </span>
+                    )}
                   </ContextMenuTrigger>
                   <ContextMenuContent>
                     <ContextMenuItem
@@ -336,14 +346,12 @@ export const CabinSection = ({
             >
               {rows.map((row, rowIdx) => {
                 if (exitRowMap[row] === undefined) return null;
-                const cellWidth = seatSize + 8;
-                const gapWidth = 8;
-                const left = 40 + rowIdx * (cellWidth + gapWidth) - 4;
-                const width = cellWidth + 8;
+                const left = 40 + rowLeftEdges[rowIdx] - 4;
+                const width = EXIT_COL_WIDTH + 8;
                 return (
                   <div
                     key={`exit-bg-${row}`}
-                    className="pointer-events-none absolute inset-y-0 rounded-xl"
+                    className="pointer-events-none absolute inset-y-0 rounded-md"
                     style={{
                       left: `${left}px`,
                       width: `${width}px`,
@@ -366,7 +374,7 @@ export const CabinSection = ({
                       <ContextMenu>
                         <ContextMenuTrigger
                           render={
-                            <div className="flex w-8 flex-shrink-0 cursor-context-menu items-center justify-center" />
+                            <div className="flex w-8 shrink-0 cursor-context-menu items-center justify-center" />
                           }
                         >
                           <span className="text-muted-foreground/40 text-[11px] font-bold transition-colors select-none hover:text-blue-500">
@@ -386,13 +394,11 @@ export const CabinSection = ({
                           </ContextMenuItem>
                         </ContextMenuContent>
                       </ContextMenu>
-                      {rows.map((row) => {
+                      {rows.map((row, rowIdx) => {
                         const id = `${row}-${col}`;
                         const equipment = seatConfig[id];
 
                         if (exitRowMap[row] !== undefined) {
-                          const isTopOrBottom =
-                            col === firstCol || col === lastCol;
                           return (
                             <ContextMenu key={id}>
                               <ContextMenuTrigger
@@ -400,19 +406,13 @@ export const CabinSection = ({
                                   <div
                                     data-row={row}
                                     style={{
-                                      width: `${seatSize + 8}px`,
+                                      width: `${rowColWidths[rowIdx]}px`,
                                       height: `${seatSize}px`,
                                     }}
                                     className="flex shrink-0 cursor-context-menu items-center justify-center"
                                   />
                                 }
-                              >
-                                {isTopOrBottom && (
-                                  <span className="text-[10px] font-black tracking-tight text-red-600/90 select-none">
-                                    EXIT
-                                  </span>
-                                )}
-                              </ContextMenuTrigger>
+                              />
                               <ContextMenuContent>
                                 <ContextMenuItem
                                   onClick={() =>
@@ -437,7 +437,7 @@ export const CabinSection = ({
                                 width: `${seatSize + 8}px`,
                                 height: `${seatSize}px`,
                               }}
-                              className="flex flex-shrink-0 justify-center"
+                              className="flex shrink-0 justify-center"
                             />
                           );
                         }
@@ -468,7 +468,7 @@ export const CabinSection = ({
                               width: `${seatSize + 8}px`,
                               height: `${seatSize}px`,
                             }}
-                            className="relative flex flex-shrink-0 items-center justify-center"
+                            className="relative flex shrink-0 items-center justify-center"
                           >
                             <SeatCell
                               id={id}
@@ -510,6 +510,30 @@ export const CabinSection = ({
                 </React.Fragment>
               ))}
             </div>
+
+            {hasExitRows && (
+              <div
+                className="flex items-center gap-2"
+                style={{ marginTop: `${verticalGap}px` }}
+              >
+                <div className="w-8 shrink-0" />
+                {rows.map((row, idx) => (
+                  <div
+                    key={row}
+                    className="shrink-0"
+                    style={{ width: `${rowColWidths[idx]}px` }}
+                  >
+                    {exitRowMap[row] !== undefined && (
+                      <div className="flex h-full w-full items-center justify-center rounded border border-red-300/60 bg-red-50/80">
+                        <span className="text-[8px] font-black tracking-widest text-red-500 uppercase select-none">
+                          EXIT
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
       </ContextMenuTrigger>
