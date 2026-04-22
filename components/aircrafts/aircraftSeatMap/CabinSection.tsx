@@ -101,10 +101,7 @@ const CabinSectionComponent = ({
     () => cabin.seatFormat.split("-").map(Number),
     [cabin.seatFormat],
   );
-  const totalCols = useMemo(
-    () => groups.reduce((a, b) => a + b, 0),
-    [groups],
-  );
+  const totalCols = useMemo(() => groups.reduce((a, b) => a + b, 0), [groups]);
 
   const { seatSize, verticalGap, spacerHeight } = useMemo(() => {
     const containerPadding = 48;
@@ -121,7 +118,7 @@ const CabinSectionComponent = ({
     return { seatSize, verticalGap, spacerHeight };
   }, [groups, totalCols]);
 
-  const EXIT_COL_WIDTH = 20;
+  const EXIT_COL_WIDTH = 10;
   const { rowColWidths, rowLeftEdges } = useMemo(() => {
     const widths = rows.map((row) =>
       exitRowMap[row] !== undefined ? EXIT_COL_WIDTH : seatSize + 8,
@@ -230,7 +227,10 @@ const CabinSectionComponent = ({
           <div className="flex w-8 items-center justify-center rounded-l-xl border-l-2 border-blue-400/40 bg-blue-500/10 transition-colors group-hover/cabin:bg-blue-500/15">
             <span
               className="text-[9px] font-black tracking-[0.35em] whitespace-nowrap text-blue-600/80 uppercase select-none"
-              style={{ writingMode: "vertical-lr", transform: "rotate(180deg)" }}
+              style={{
+                writingMode: "vertical-lr",
+                transform: "rotate(180deg)",
+              }}
             >
               {cabin.label}
             </span>
