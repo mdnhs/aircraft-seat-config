@@ -75,33 +75,50 @@ export const AddEmergencyExitDialog = ({
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="sm:max-w-[380px]">
-        <DialogHeader>
+        <DialogHeader className="gap-1">
           <DialogTitle>Add Emergency Exit</DialogTitle>
         </DialogHeader>
-        <div className="grid gap-5 py-4">
-          <div className="grid gap-1.5">
-            <Label htmlFor="exit-row">Row</Label>
-            <Input
-              id="exit-row"
-              type="number"
-              min={1}
-              value={row}
-              onChange={(e) => {
-                setRow(e.target.value);
-                if (rowError) setRowError("");
-              }}
-              placeholder="e.g. 5"
-              className={rowError ? "border-destructive" : ""}
-              autoFocus
-            />
-            {rowError && <p className="text-destructive text-xs">{rowError}</p>}
+        <div className="grid gap-3 py-3">
+          <div className="grid grid-cols-4 items-center gap-3">
+            <Label
+              htmlFor="exit-row"
+              className="text-muted-foreground text-right text-xs font-semibold tracking-wider uppercase"
+            >
+              Row
+            </Label>
+            <div className="col-span-3">
+              <Input
+                id="exit-row"
+                type="number"
+                min={1}
+                value={row}
+                onChange={(e) => {
+                  setRow(e.target.value);
+                  if (rowError) setRowError("");
+                }}
+                placeholder="e.g. 5"
+                className={rowError ? "border-destructive" : ""}
+                autoFocus
+              />
+              {rowError && (
+                <p className="text-destructive mt-1 text-[10px] leading-tight">
+                  {rowError}
+                </p>
+              )}
+            </div>
           </div>
         </div>
-        <DialogFooter>
-          <Button variant="outline" onClick={() => handleOpenChange(false)}>
+        <DialogFooter className="gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => handleOpenChange(false)}
+          >
             Cancel
           </Button>
-          <Button onClick={handleSave}>Add Exit</Button>
+          <Button size="sm" onClick={handleSave}>
+            Add Exit
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

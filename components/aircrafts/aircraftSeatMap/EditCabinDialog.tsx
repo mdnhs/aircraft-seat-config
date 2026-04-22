@@ -85,17 +85,20 @@ export const EditCabinDialog = ({
 
   return (
     <Dialog open={!!cabin} onOpenChange={() => onClose()}>
-      <DialogContent className="sm:max-w-[425px]">
-        <DialogHeader>
+      <DialogContent className="sm:max-w-95">
+        <DialogHeader className="gap-1">
           <DialogTitle>Edit Cabin</DialogTitle>
-          <DialogDescription>
+          <DialogDescription className="text-xs">
             Update the cabin layout details.
           </DialogDescription>
         </DialogHeader>
-        <div className="grid gap-4 py-4">
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="edit-cabin-type" className="text-right">
-              Cabin Type
+        <div className="grid gap-3 py-3">
+          <div className="grid grid-cols-4 items-center gap-3">
+            <Label
+              htmlFor="edit-cabin-type"
+              className="text-muted-foreground text-right text-xs font-semibold tracking-wider uppercase"
+            >
+              Type
             </Label>
             <div className="col-span-3">
               <Select
@@ -115,51 +118,47 @@ export const EditCabinDialog = ({
               </Select>
             </div>
           </div>
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="edit-row-from" className="text-right">
-              Row From
+          <div className="grid grid-cols-4 items-start gap-3">
+            <Label className="text-muted-foreground mt-2 text-right text-xs font-semibold tracking-wider uppercase">
+              Rows
             </Label>
             <div className="col-span-3">
-              <Input
-                id="edit-row-from"
-                type="number"
-                value={rowFrom}
-                onChange={(e) => {
-                  setRowFrom(e.target.value);
-                  setErrors((prev) => ({ ...prev, rowFrom: "" }));
-                }}
-                className={errors.rowFrom ? "border-destructive" : ""}
-              />
-              {errors.rowFrom && (
-                <p className="text-destructive mt-1 text-xs">
-                  {errors.rowFrom}
+              <div className="flex items-center gap-2">
+                <Input
+                  id="edit-row-from"
+                  type="number"
+                  value={rowFrom}
+                  onChange={(e) => {
+                    setRowFrom(e.target.value);
+                    setErrors((prev) => ({ ...prev, rowFrom: "" }));
+                  }}
+                  className={errors.rowFrom ? "border-destructive" : ""}
+                />
+                <span className="text-muted-foreground text-xs">to</span>
+                <Input
+                  id="edit-row-to"
+                  type="number"
+                  value={rowTo}
+                  onChange={(e) => {
+                    setRowTo(e.target.value);
+                    setErrors((prev) => ({ ...prev, rowTo: "" }));
+                  }}
+                  className={errors.rowTo ? "border-destructive" : ""}
+                />
+              </div>
+              {(errors.rowFrom || errors.rowTo) && (
+                <p className="text-destructive mt-1 text-[10px] leading-tight">
+                  {errors.rowFrom || errors.rowTo}
                 </p>
               )}
             </div>
           </div>
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="edit-row-to" className="text-right">
-              Row To
-            </Label>
-            <div className="col-span-3">
-              <Input
-                id="edit-row-to"
-                type="number"
-                value={rowTo}
-                onChange={(e) => {
-                  setRowTo(e.target.value);
-                  setErrors((prev) => ({ ...prev, rowTo: "" }));
-                }}
-                className={errors.rowTo ? "border-destructive" : ""}
-              />
-              {errors.rowTo && (
-                <p className="text-destructive mt-1 text-xs">{errors.rowTo}</p>
-              )}
-            </div>
-          </div>
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="edit-seat-format" className="text-right">
-              Seat Format
+          <div className="grid grid-cols-4 items-center gap-3">
+            <Label
+              htmlFor="edit-seat-format"
+              className="text-muted-foreground text-right text-xs font-semibold tracking-wider uppercase"
+            >
+              Format
             </Label>
             <div className="col-span-3">
               <Input
@@ -173,18 +172,20 @@ export const EditCabinDialog = ({
                 className={errors.seatFormat ? "border-destructive" : ""}
               />
               {errors.seatFormat && (
-                <p className="text-destructive mt-1 text-xs">
+                <p className="text-destructive mt-1 text-[10px] leading-tight">
                   {errors.seatFormat}
                 </p>
               )}
             </div>
           </div>
         </div>
-        <DialogFooter>
-          <Button variant="outline" onClick={onClose}>
+        <DialogFooter className="gap-2">
+          <Button variant="outline" size="sm" onClick={onClose}>
             Cancel
           </Button>
-          <Button onClick={handleSave}>Apply Changes</Button>
+          <Button size="sm" onClick={handleSave}>
+            Apply Changes
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

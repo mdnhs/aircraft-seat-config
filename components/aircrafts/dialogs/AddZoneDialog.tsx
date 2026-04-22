@@ -70,63 +70,87 @@ export const AddZoneDialog = ({
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className="sm:max-w-[400px]">
-        <DialogHeader>
+      <DialogContent className="sm:max-w-[380px]">
+        <DialogHeader className="gap-1">
           <DialogTitle>Add Zone</DialogTitle>
         </DialogHeader>
 
-        <div className="grid gap-5 py-4">
-          <div className="grid gap-1.5">
-            <Label htmlFor="zone-name">Zone Name</Label>
-            <Input
-              id="zone-name"
-              value={zoneName}
-              onChange={(e) => {
-                setZoneName(e.target.value);
-                if (nameError) setNameError("");
-              }}
-              placeholder="e.g. Emergency Exit Zone"
-              className={nameError ? "border-destructive" : ""}
-              autoFocus
-            />
-            {nameError && (
-              <p className="text-destructive text-xs">{nameError}</p>
-            )}
-          </div>
-
-          <div className="grid gap-2">
-            <Label>Zone Color</Label>
-            <div className="flex flex-wrap gap-2">
-              {ZONE_COLORS.map((c) => (
-                <button
-                  key={c.value}
-                  type="button"
-                  title={c.label}
-                  onClick={() => setZoneColor(c.value)}
-                  className="h-7 w-7 cursor-pointer rounded-full transition-transform hover:scale-110 focus:outline-none"
-                  style={{
-                    backgroundColor: c.value,
-                    boxShadow:
-                      zoneColor === c.value
-                        ? `0 0 0 2px white, 0 0 0 4px ${c.value}`
-                        : undefined,
-                  }}
-                />
-              ))}
+        <div className="grid gap-3 py-3">
+          <div className="grid grid-cols-4 items-center gap-3">
+            <Label
+              htmlFor="zone-name"
+              className="text-muted-foreground text-right text-xs font-semibold uppercase tracking-wider"
+            >
+              Name
+            </Label>
+            <div className="col-span-3">
+              <Input
+                id="zone-name"
+                value={zoneName}
+                onChange={(e) => {
+                  setZoneName(e.target.value);
+                  if (nameError) setNameError("");
+                }}
+                placeholder="e.g. Emergency Exit Zone"
+                className={nameError ? "border-destructive" : ""}
+                autoFocus
+              />
+              {nameError && (
+                <p className="text-destructive mt-1 text-[10px] leading-tight">
+                  {nameError}
+                </p>
+              )}
             </div>
           </div>
 
-          <p className="text-muted-foreground text-xs">
-            {selectedSeats.length} seat
-            {selectedSeats.length !== 1 ? "s" : ""} will be added to this zone.
-          </p>
+          <div className="grid grid-cols-4 items-center gap-3">
+            <Label className="text-muted-foreground text-right text-xs font-semibold uppercase tracking-wider">
+              Color
+            </Label>
+            <div className="col-span-3">
+              <div className="flex flex-wrap gap-2">
+                {ZONE_COLORS.map((c) => (
+                  <button
+                    key={c.value}
+                    type="button"
+                    title={c.label}
+                    onClick={() => setZoneColor(c.value)}
+                    className="h-6 w-6 cursor-pointer rounded-full transition-transform hover:scale-110 focus:outline-none"
+                    style={{
+                      backgroundColor: c.value,
+                      boxShadow:
+                        zoneColor === c.value
+                          ? `0 0 0 2px white, 0 0 0 4px ${c.value}`
+                          : undefined,
+                    }}
+                  />
+                ))}
+              </div>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-4 items-center gap-3">
+            <div className="col-start-2 col-span-3">
+              <p className="text-muted-foreground text-[10px]">
+                {selectedSeats.length} seat
+                {selectedSeats.length !== 1 ? "s" : ""} will be added to this
+                zone.
+              </p>
+            </div>
+          </div>
         </div>
 
-        <DialogFooter>
-          <Button variant="outline" onClick={() => handleOpenChange(false)}>
+        <DialogFooter className="gap-2 sm:gap-0">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => handleOpenChange(false)}
+          >
             Cancel
           </Button>
-          <Button onClick={handleSave}>Add Zone</Button>
+          <Button size="sm" onClick={handleSave}>
+            Add Zone
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
