@@ -49,6 +49,8 @@ interface AircraftSeatMapProps {
   wings: WingsConfig | null;
   selectedSeats: string[];
   onSelectedSeatsChange: (seats: string[]) => void;
+  onDeleteZone: (id: string) => void;
+  onUpdateZone: (id: string, updates: Partial<ZoneConfig>) => void;
 }
 
 export const AircraftSeatMap = ({
@@ -74,12 +76,14 @@ export const AircraftSeatMap = ({
   wings,
   selectedSeats,
   onSelectedSeatsChange,
+  onDeleteZone,
+  onUpdateZone,
 }: AircraftSeatMapProps) => {
   const seatZoneMap = zones.reduce<
-    Record<string, { name: string; color: string }>
+    Record<string, { id: string; name: string; color: string }>
   >((map, zone) => {
     zone.seatIds.forEach((id) => {
-      map[id] = { name: zone.name, color: zone.color };
+      map[id] = { id: zone.id, name: zone.name, color: zone.color };
     });
     return map;
   }, {});
@@ -105,6 +109,11 @@ export const AircraftSeatMap = ({
     cabinId: string;
     rowIndex: number;
     currentLabel: string;
+  } | null>(null);
+
+  const [renamingZone, setRenamingZone] = useState<{
+    id: string;
+    currentName: string;
   } | null>(null);
 
   const [editingCabin, setEditingCabin] = useState<CabinConfig | null>(null);
@@ -222,6 +231,12 @@ export const AircraftSeatMap = ({
     }
   };
 
+  const handleRenameZone = (name: string) => {
+    if (renamingZone) {
+      onUpdateZone(renamingZone.id, { name });
+    }
+  };
+
   return (
     <div className="bg-background flex min-h-150 overflow-hidden">
       <div className="border-border bg-muted/30 z-10 flex w-20 flex-col gap-2 border-r p-3 shadow-[4px_0_10px_-4px_rgba(0,0,0,0.05)]">
@@ -309,6 +324,10 @@ export const AircraftSeatMap = ({
                         onRenameRow={(cabinId, rowIndex, currentLabel) =>
                           setRenamingRow({ cabinId, rowIndex, currentLabel })
                         }
+                        onDeleteZone={onDeleteZone}
+                        onRenameZone={(id, currentName) =>
+                          setRenamingZone({ id, currentName })
+                        }
                       />
                     </React.Fragment>
                   );
@@ -382,6 +401,15 @@ export const AircraftSeatMap = ({
         initialValue={renamingRow?.currentLabel ?? ""}
         onClose={() => setRenamingRow(null)}
         onSave={handleRenameRow}
+      />
+
+      <RenameLabelDialog
+        open={!!renamingZone}
+        title="Rename Zone"
+        description="Enter a new name for this zone."
+        initialValue={renamingZone?.currentName ?? ""}
+        onClose={() => setRenamingZone(null)}
+        onSave={handleRenameZone}
       />
 
       <EditCabinDialog

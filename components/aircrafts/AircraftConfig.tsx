@@ -498,6 +498,16 @@ export default function AircraftConfig() {
     setSelectedSeats([]);
   };
 
+  const handleDeleteZone = (id: string) => {
+    setZones((prev) => (prev || []).filter((z) => z.id !== id));
+  };
+
+  const handleUpdateZone = (id: string, updates: Partial<ZoneConfig>) => {
+    setZones((prev) =>
+      (prev || []).map((z) => (z.id === id ? { ...z, ...updates } : z)),
+    );
+  };
+
   const handleDeleteEmergencyExit = (id: string) => {
     setEmergencyExits((prev) => (prev || []).filter((e) => e.id !== id));
   };
@@ -603,6 +613,8 @@ export default function AircraftConfig() {
             wings={wings || null}
             selectedSeats={selectedSeats}
             onSelectedSeatsChange={setSelectedSeats}
+            onDeleteZone={handleDeleteZone}
+            onUpdateZone={handleUpdateZone}
           />
           <AddZoneDialog
             open={showAddZoneDialog}

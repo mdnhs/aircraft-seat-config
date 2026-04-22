@@ -12,6 +12,7 @@ import {
   CabinConfig,
   EmergencyExitConfig,
   SeatConfig,
+  ZoneConfig,
 } from "../types";
 import { SeatCell } from "./SeatCell";
 
@@ -19,7 +20,7 @@ interface CabinSectionProps {
   cabin: CabinConfig;
   seatConfig: SeatConfig;
   selectedSeats: string[];
-  seatZoneMap: Record<string, { name: string; color: string }>;
+  seatZoneMap: Record<string, { id: string; name: string; color: string }>;
   emergencyExits: EmergencyExitConfig[];
   onDeleteEmergencyExit: (id: string) => void;
   onDelete: (id: string) => void;
@@ -36,9 +37,12 @@ interface CabinSectionProps {
     rowIndex: number,
     currentLabel: string,
   ) => void;
+  onDeleteZone: (id: string) => void;
+  onRenameZone: (id: string, currentName: string) => void;
 }
 
 type ZoneSpan = {
+  id: string;
   name: string;
   color: string;
   startIdx: number;
@@ -58,6 +62,8 @@ export const CabinSection = ({
   onCustomizeLavSize,
   onRenameColumn,
   onRenameRow,
+  onDeleteZone,
+  onRenameZone,
 }: CabinSectionProps) => {
   const rows = Array.from(
     { length: cabin.endRow - cabin.startRow + 1 },
@@ -160,10 +166,16 @@ export const CabinSection = ({
 
   const zoneSpans = rowZones.reduce<ZoneSpan[]>((spans, rz, idx) => {
     const last = spans[spans.length - 1];
-    if (rz && last && last.name === rz.name) {
+    if (rz && last && last.id === rz.id) {
       last.length += 1;
     } else if (rz) {
-      spans.push({ name: rz.name, color: rz.color, startIdx: idx, length: 1 });
+      spans.push({
+        id: rz.id,
+        name: rz.name,
+        color: rz.color,
+        startIdx: idx,
+        length: 1,
+      });
     }
     return spans;
   }, []);
@@ -197,7 +209,7 @@ export const CabinSection = ({
                 span.length * cellWidth + (span.length - 1) * gapWidth + 8;
               return (
                 <div
-                  key={`zone-bg-${span.name}-${span.startIdx}`}
+                  key={`zone-bg-${span.id}-${span.startIdx}`}
                   className="pointer-events-none absolute inset-y-0 rounded-xl"
                   style={{
                     left: `${left}px`,
@@ -241,19 +253,41 @@ export const CabinSection = ({
                     const width =
                       span.length * cellWidth + (span.length - 1) * gapWidth;
                     return (
-                      <div
-                        key={`${span.name}-${span.startIdx}`}
-                        className="absolute inset-y-0 flex items-center justify-center overflow-hidden rounded"
-                        style={{
-                          left: `${left}px`,
-                          width: `${width}px`,
-                          backgroundColor: span.color,
-                        }}
-                      >
-                        <span className="truncate px-2 text-[9px] font-bold text-white select-none">
-                          {span.name}
-                        </span>
-                      </div>
+                      <ContextMenu key={`${span.id}-${span.startIdx}`}>
+                        <ContextMenuTrigger
+                          render={
+                            <div
+                              className="absolute inset-y-0 flex cursor-context-menu items-center justify-center overflow-hidden rounded"
+                              style={{
+                                left: `${left}px`,
+                                width: `${width}px`,
+                                backgroundColor: span.color,
+                              }}
+                            />
+                          }
+                        >
+                          <span className="truncate px-2 text-[9px] font-bold text-white select-none">
+                            {span.name}
+                          </span>
+                        </ContextMenuTrigger>
+                        <ContextMenuContent>
+                          <ContextMenuItem
+                            onClick={() => onRenameZone(span.id, span.name)}
+                            className="gap-2"
+                          >
+                            <Settings2 className="h-4 w-4" />
+                            Rename Zone
+                          </ContextMenuItem>
+                          <ContextMenuSeparator />
+                          <ContextMenuItem
+                            onClick={() => onDeleteZone(span.id)}
+                            className="text-destructive focus:text-destructive gap-2"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                            Delete Zone
+                          </ContextMenuItem>
+                        </ContextMenuContent>
+                      </ContextMenu>
                     );
                   })}
                 </div>
