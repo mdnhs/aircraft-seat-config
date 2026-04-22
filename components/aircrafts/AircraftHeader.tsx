@@ -10,7 +10,7 @@ import {
 } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { REG_NO } from "./constants";
-import PlaneInfo from "../svg/PlaneInfo";
+import Image from "next/image";
 
 interface AircraftHeaderProps {
   totalSeats: number;
@@ -26,7 +26,12 @@ export const AircraftHeader = ({ totalSeats, availableSeats, blockedSeats }: Air
           <div className="flex items-center gap-3">
             <div className="rounded-lg border border-[#E8EBEE] bg-[#f8f9fa] p-2.75">
               {/* <Plane className="h-5 w-5" /> */}
-              <PlaneInfo />
+              <Image
+                src="/plane-info.svg"
+                alt="Aircraft"
+                width={20}
+                height={20}
+              />
             </div>
             <h1 className="font-semibold text-[#374456]">Aircraft Details</h1>
           </div>

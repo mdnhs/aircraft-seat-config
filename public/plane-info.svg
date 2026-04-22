@@ -1,7 +1,4 @@
-export default function PlaneInfo() {
-  return (
-    <div>
-      <svg
+ <svg
         xmlns="http://www.w3.org/2000/svg"
         width="20"
         height="20"
@@ -37,6 +34,3 @@ export default function PlaneInfo() {
           </clipPath>
         </defs>
       </svg>
-    </div>
-  );
-}
